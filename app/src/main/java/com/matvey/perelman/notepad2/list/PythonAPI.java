@@ -9,6 +9,9 @@ public class PythonAPI {
     public static Executor executor;
 
     public static void toast(String text){
+        activity.makeToast(text, false);
+    }
+    public static void toastL(String text){
         activity.makeToast(text, true);
     }
     private static ArrayList<String> normPath(String path){
@@ -34,11 +37,12 @@ public class PythonAPI {
         executor.mkdir(path.get(path.size() - 1));
         cdGoReverse(path);
     }
-    public static void delete(String epath){
+    public static boolean delete(String epath){
         ArrayList<String> path = normPath(epath);
         cdGoReverse(path);
-        executor.delete(path.get(path.size() - 1));
+        boolean deleted = executor.delete(path.get(path.size() - 1));
         cdGoReverse(path);
+        return deleted;
     }
     public static void write(String fpath, String content){
         ArrayList<String> path = normPath(fpath);

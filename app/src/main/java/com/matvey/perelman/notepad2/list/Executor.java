@@ -1,14 +1,9 @@
 package com.matvey.perelman.notepad2.list;
 
 import com.chaquo.python.PyObject;
-import com.chaquo.python.Python;
-import com.matvey.perelman.notepad2.MainActivity;
 import com.matvey.perelman.notepad2.creator.CreatorElement;
 import com.matvey.perelman.notepad2.database.callback.CursorUpdatable;
 import com.matvey.perelman.notepad2.database.DatabaseElement;
-
-import java.util.ArrayList;
-import java.util.Arrays;
 
 public class Executor implements AutoCloseable {
     private final CreatorElement celement;
@@ -31,7 +26,11 @@ public class Executor implements AutoCloseable {
         cursor.reloadData();
 
         cursor.getElement(delement, file_idx);
-        pyapi.callAttr("run", delement.content);
+        try {
+            pyapi.callAttr("run", delement.content);
+        }catch (Throwable t){
+            PythonAPI.toastL(t.getMessage());
+        }
     }
 
     public String getPath(){
@@ -58,7 +57,7 @@ public class Executor implements AutoCloseable {
         int idx = cursor.getElementIdx(dir);
         if(idx == -1)
             defnewDir(dir);
-        else if(cursor.c.isFolder(idx))
+        else if(!cursor.c.isFolder(idx))
             throw new RuntimeException("File with the same name exists: " + dir);
     }
 
