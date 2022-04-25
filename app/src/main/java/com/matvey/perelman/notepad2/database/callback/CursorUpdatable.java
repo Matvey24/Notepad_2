@@ -53,7 +53,10 @@ public class CursorUpdatable {
     public void reloadData() {
         c.reloadData();
     }
-
+    public void updateTextData(DatabaseElement element){
+        c.updateTextData(element);
+        updater.onChangeItem(this, element.id);
+    }
     public void enter(int idx) {
         c.enter(idx);
         c.reloadData();
@@ -81,7 +84,12 @@ public class CursorUpdatable {
         c.deleteElement(id);
         updater.onDeleteItem(this, id);
     }
-
+    public int getElementIdx(String name){
+        return c.getElementIdx(name);
+    }
+    public int getElementId(int idx){
+        return c.getElementId(idx);
+    }
     void onNewItem(int id){
         if(listener == null)
             return;

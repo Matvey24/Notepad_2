@@ -76,19 +76,16 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
         this.main_activity = main_activity;
         element_buff = new DatabaseElement();
         tasks = new Tasks();
+        executor = new Executor();
         tasks.runTask(()->{
             if(!Python.isStarted())
                 Python.start(new AndroidPlatform(main_activity));
 
             PythonAPI.activity = main_activity;
-
+            PythonAPI.executor = executor;
             Python p = Python.getInstance();
-            PyObject module = p.getModule("python_api");
-
-            module.callAttr("helloworld", "matvey");
-
+            executor.setPython(p.getModule("python_api"));
         });
-        executor = new Executor(main_activity);
     }
 
     public void onClickAction(String name, int id, ElementType type, int position) {

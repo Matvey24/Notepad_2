@@ -76,7 +76,7 @@ public class DatabaseCursor {
         }
     }
 
-    public int getElementId(String name) {
+    public int getElementIdx(String name) {
         for (int i = 0; i < cursor.getCount(); ++i) {
             cursor.moveToPosition(i);
             if (decode(cursor.getString(1)).equals(name)) {
@@ -85,7 +85,18 @@ public class DatabaseCursor {
         }
         return -1;
     }
-
+    public int getElementId(int idx){
+        cursor.moveToPosition(idx);
+        return cursor.getInt(0);
+    }
+    public ElementType getType(int idx){
+        cursor.moveToPosition(idx);
+        return ElementType.values()[cursor.getInt(3)];
+    }
+    public boolean isFolder(int idx){
+        cursor.moveToPosition(idx);
+        return cursor.getInt(3) == ElementType.FOLDER.ordinal();
+    }
     public void reloadData() {
         close();
         if (layer() == 0) {
