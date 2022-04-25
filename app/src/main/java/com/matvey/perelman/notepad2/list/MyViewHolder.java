@@ -1,0 +1,73 @@
+package com.matvey.perelman.notepad2.list;
+
+import android.view.View;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.matvey.perelman.notepad2.R;
+import com.matvey.perelman.notepad2.database.DatabaseElement;
+
+public class MyViewHolder extends RecyclerView.ViewHolder {
+    private final TextView name_tv;
+    private final TextView content_tv;
+    private final ImageView type_image;
+    private final ImageButton action_btn;
+    private boolean error_message;
+    private int id;
+    private String name;
+    private ElementType type;
+    public MyViewHolder(View itemView, Adapter adapter){
+        super(itemView);
+        name_tv = itemView.findViewById(R.id.name_tv);
+        content_tv = itemView.findViewById(R.id.content_tv);
+        type_image = itemView.findViewById(R.id.type_image);
+        action_btn = itemView.findViewById(R.id.action_btn);
+        action_btn.setOnClickListener((view)->adapter.onClickAction(name, id, type, getAdapterPosition()));
+        itemView.setOnClickListener((view)->{
+            if(!error_message)
+                adapter.onClickField(name, id, getAdapterPosition(), type);
+        });
+    }
+    public void setValues(DatabaseElement element, ActionType a_type){
+        this.id = element.id;
+        this.type = element.type;
+        name = element.name;
+        name_tv.setText(element.name);
+        content_tv.setText(element.content);
+        switch (type){
+            case FOLDER:
+                type_image.setImageResource(R.drawable.folder_image);
+                break;
+            case TEXT:
+                type_image.setImageResource(R.drawable.text_image);
+                break;
+            case EXECUTABLE:
+                type_image.setImageResource(R.drawable.executable_image);
+                break;
+        }
+        if(a_type == ActionType.DISABLED)
+            action_btn.setVisibility(View.INVISIBLE);
+        else {
+            action_btn.setVisibility(View.VISIBLE);
+            switch (a_type){
+                case DELETE:
+                    action_btn.setImageResource(R.drawable.delete_image);
+                    break;
+                case SETTINGS:
+                    action_btn.setImageResource(R.drawable.settings_image);
+                    break;
+            }
+        }
+        error_message = false;
+    }
+    public void setError(String name, String description){
+        action_btn.setVisibility(View.INVISIBLE);
+        name_tv.setText(name);
+        content_tv.setText(description);
+        type_image.setImageResource(R.drawable.error_image);
+        error_message = true;
+    }
+}
