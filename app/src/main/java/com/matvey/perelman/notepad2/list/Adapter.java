@@ -7,6 +7,9 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.chaquo.python.PyObject;
+import com.chaquo.python.Python;
+import com.chaquo.python.android.AndroidPlatform;
 import com.google.android.material.snackbar.Snackbar;
 import com.matvey.perelman.notepad2.MainActivity;
 import com.matvey.perelman.notepad2.R;
@@ -73,6 +76,18 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
         this.main_activity = main_activity;
         element_buff = new DatabaseElement();
         tasks = new Tasks();
+        tasks.runTask(()->{
+            if(!Python.isStarted())
+                Python.start(new AndroidPlatform(main_activity));
+
+            PythonAPI.activity = main_activity;
+
+            Python p = Python.getInstance();
+            PyObject module = p.getModule("python_api");
+
+            module.callAttr("helloworld", "matvey");
+
+        });
         executor = new Executor(main_activity);
     }
 
@@ -101,6 +116,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
 
     public void runFile(int idx) {
         tasks.runTask(() -> {
+            executor.begin(cursor, idx);
         });
     }
 
