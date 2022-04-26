@@ -90,12 +90,13 @@ public class DatabaseCursor {
         return cursor.getInt(0);
     }
     public ElementType getType(int idx){
+        if(layer() == 0)
+            return ElementType.FOLDER;
         cursor.moveToPosition(idx);
         return ElementType.values()[cursor.getInt(3)];
     }
     public boolean isFolder(int idx){
-        cursor.moveToPosition(idx);
-        return cursor.getInt(3) == ElementType.FOLDER.ordinal();
+        return getType(idx) == ElementType.FOLDER;
     }
     public void reloadData() {
         close();
@@ -242,6 +243,14 @@ public class DatabaseCursor {
         int idx = db_file_index;
         db_file_index = other.db_file_index;
         if (idx != db_file_index && idx != -1)
+            connection.exitFile(idx);
+    }
+    public void setRootPath(){
+        path.clear();
+        ids.clear();
+        int idx = db_file_index;
+        db_file_index = -1;
+        if(idx != -1)
             connection.exitFile(idx);
     }
 }
