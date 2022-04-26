@@ -138,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (adapter.cursor.back())
+        if (adapter.back())
             super.onBackPressed();
     }
 

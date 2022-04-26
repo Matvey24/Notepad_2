@@ -22,9 +22,12 @@ import com.matvey.perelman.notepad2.creator.CreatorElement;
 import com.matvey.perelman.notepad2.database.callback.ViewListener;
 import com.matvey.perelman.notepad2.utils.threads.Tasks;
 
+import java.util.ArrayList;
+
 public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
     public ActionType actionType = ActionType.DISABLED;
     public boolean ask_before_delete = true;
+    public boolean running_state = false;
     private final DatabaseConnection connection;
     public final CursorUpdatable cursor;
     private final DatabaseElement element_buff;
@@ -89,6 +92,8 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
     }
 
     public void onClickAction(String name, int id, ElementType type, int position) {
+        if(running_state)
+            return;
         switch (actionType) {
             case DELETE:
                 if (ask_before_delete) {
@@ -110,14 +115,22 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
                 break;
         }
     }
-
+    public boolean back(){
+        if(running_state)
+            return false;
+        return cursor.back();
+    }
     public void runFile(int idx) {
-        tasks.runTask(() -> {
+        //tasks.runTask(() -> {
+            running_state = true;
             executor.begin(cursor, idx);
-        });
+            running_state = false;
+        //});
     }
 
     public void onClickField(String name, int id, int position, ElementType type) {
+        if(running_state)
+            return;
         if (type == ElementType.FOLDER) {
             cursor.enter(position);
         } else if (type == ElementType.TEXT) {
@@ -130,6 +143,8 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
 
     public void setActionType(ActionType type) {
         this.actionType = type;
+        if(running_state)
+            return;
         notifyDataSetChanged();
     }
 
