@@ -120,10 +120,10 @@ public class Executor implements AutoCloseable {
                 return s;
             }
         }
-        int idx = cursor.c.getElementIdx(dir);
+        int idx = cursor.getElementIdx(dir);
         if(idx == -1){
             defnewDir(dir);
-            idx = cursor.c.getElementIdx(dir);
+            idx = cursor.getElementIdx(dir);
         }
         if(!cursor.c.isFolder(idx))
             throw new RuntimeException("Couldn't enter file: " + dir);

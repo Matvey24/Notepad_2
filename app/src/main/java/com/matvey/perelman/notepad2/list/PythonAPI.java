@@ -18,12 +18,17 @@ public class PythonAPI {
         String[] arr = path.split("/");
         ArrayList<String> list = new ArrayList<>();
         for(String s: arr)
-            list.add(s.replaceAll("[ \n\t\r]", ""));
+            list.add(s.trim());
         return list;
     }
     private static void cdGoReverse(ArrayList<String> path){
         for(int i = 0; i < path.size() - 1; ++i)
             path.set(i, executor.cd(path.get(i)));
+        for(int i = 0; i < (path.size() - 1) / 2; ++i){
+            String s = path.get(i);
+            path.set(i, path.get(path.size() - i - 2));
+            path.set(path.size() - i - 2, s);
+        }
     }
     public static void touch(String tpath){
         ArrayList<String> path = normPath(tpath);

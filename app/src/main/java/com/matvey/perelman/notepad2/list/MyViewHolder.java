@@ -61,6 +61,7 @@ public class MyViewHolder extends RecyclerView.ViewHolder {
                     break;
             }
         }
+        itemView.setFocusable(true);
         error_message = false;
     }
     public void setError(String name, String description){
