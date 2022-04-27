@@ -8,4 +8,13 @@ public class DatabaseElement {
     public String content;
     public ElementType type;
 
+    @Override
+    public String toString() {
+        return "DatabaseElement{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", content='" + content + '\'' +
+                ", type=" + type +
+                '}';
+    }
 }

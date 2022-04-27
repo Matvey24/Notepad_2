@@ -75,7 +75,6 @@ public class DatabaseCursor {
             saveTo.content = decode(cursor.getString(2));
         }
     }
-
     public int getElementIdx(String name) {
         for (int i = 0; i < cursor.getCount(); ++i) {
             cursor.moveToPosition(i);

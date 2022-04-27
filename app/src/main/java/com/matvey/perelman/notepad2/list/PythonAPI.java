@@ -54,6 +54,23 @@ public class PythonAPI {
         checkPath(dir);
         return executor.listFiles(dir);
     }
+    public static String path_concat(String path1, String path2){
+        path1 = path1.trim();
+        path2 = path2.trim();
+        if(path1.endsWith("/")){
+            if(path2.startsWith("/")){
+                return path1 + path2.substring(1);
+            }else{
+                return path1 + path2;
+            }
+        }else{
+            if(path2.startsWith("/")){
+                return path1 + path2;
+            }else{
+                return path1 + "/" + path2;
+            }
+        }
+    }
     public static String get_path(){
         return executor.getPath();
     }
