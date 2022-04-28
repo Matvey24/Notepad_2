@@ -20,58 +20,65 @@ public class PythonAPI {
             throw new RuntimeException("Path contains file instead of folder");
     }
     public static void touch(String tpath){
-        String file = executor.cdGo(tpath);
+        String file = executor.cdGo(executor.parsePath(tpath));
         checkPath(file);
         executor.touch(file);
     }
     public static void mkdir(String dpath){
-        String dir = executor.cdGo(dpath);
+        String dir = executor.cdGo(executor.parsePath(dpath));
         checkPath(dir);
         executor.mkdir(dir);
     }
     public static boolean delete(String epath){
-        String entry = executor.cdGo(epath);
+        String entry = executor.cdGo(executor.parsePath(epath));
         checkPath(entry);
         return executor.delete(entry);
     }
     public static void write(String fpath, String content){
-        String file = executor.cdGo(fpath);
+        String file = executor.cdGo(executor.parsePath(fpath));
         checkPath(file);
         executor.write(file, content);
     }
     public static String read(String fpath){
-        String file = executor.cdGo(fpath);
+        String file = executor.cdGo(executor.parsePath(fpath));
         checkPath(file);
         return executor.read(file);
     }
     public static void executable(String fpath, boolean mode){
-        String file = executor.cdGo(fpath);
+        String file = executor.cdGo(executor.parsePath(fpath));
         checkPath(file);
         executor.executable(file, mode);
     }
     public static ArrayList<DatabaseElement> list_files(String dpath){
-        String dir = executor.cdGo(dpath);
+        String dir = executor.cdGo(executor.parsePath(dpath));
         checkPath(dir);
         return executor.listFiles(dir);
     }
     public static String path_concat(String path1, String path2){
-        path1 = path1.trim();
-        path2 = path2.trim();
-        if(path1.endsWith("/")){
-            if(path2.startsWith("/")){
-                return path1 + path2.substring(1);
-            }else{
-                return path1 + path2;
-            }
-        }else{
-            if(path2.startsWith("/")){
-                return path1 + path2;
-            }else{
-                return path1 + "/" + path2;
-            }
-        }
+        return executor.path_concat(path1, path2);
+    }
+    public static boolean exists(String path){
+        String entry = executor.cdGo(executor.parsePath(path));
+        checkPath(entry);
+        return executor.exists(entry);
+    }
+    public static boolean is_dir(String path){
+        String entry = executor.cdGo(executor.parsePath(path));
+        checkPath(entry);
+        return executor.isDir(entry);
+    }
+    public static boolean is_executable(String path){
+        String entry = executor.cdGo(executor.parsePath(path));
+        checkPath(entry);
+        return executor.isExecutable(entry);
     }
     public static String get_path(){
         return executor.getPath();
+    }
+    public static String get_name(String path){
+        return executor.getName(path);
+    }
+    public static void move(String entry_cut, String path_paste){
+        executor.move(entry_cut, path_paste);
     }
 }

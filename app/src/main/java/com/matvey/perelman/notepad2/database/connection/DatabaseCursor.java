@@ -152,7 +152,12 @@ public class DatabaseCursor {
         c.close();
         return id;
     }
-
+    public void update_parent(int id, int new_parent_id){
+        if(new_parent_id == -1)
+            db_file().execSQL(String.format("UPDATE files set parent = NULL where id = %s", id));
+        else
+            db_file().execSQL(String.format("UPDATE files set parent = %s where id = %s", new_parent_id, id));
+    }
     public void deleteElement(int id) {
         if (layer() == 0) {
             Cursor c = connection.db_collection.rawQuery("select * from info where id == " + id, null);

@@ -79,7 +79,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
         this.main_activity = main_activity;
         element_buff = new DatabaseElement();
         tasks = new Tasks();
-        executor = new Executor();
+        executor = new Executor(cursor);
         tasks.runTask(()->{
             if(!Python.isStarted())
                 Python.start(new AndroidPlatform(main_activity));
@@ -90,20 +90,22 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
             executor.setPython(p.getModule("python_api"));
         });
     }
-
+    public void onClickDelete(String name, int id){
+        if (ask_before_delete) {
+            Snackbar.make(main_activity.root_layout,
+                    String.format(main_activity.getString(R.string.ask_delete), name),
+                    Snackbar.LENGTH_SHORT)
+                    .setAction(R.string.action_delete, (view) -> cursor.deleteElement(id))
+                    .show();
+        } else
+            cursor.deleteElement(id);
+    }
     public void onClickAction(String name, int id, ElementType type, int position) {
         if(running_state)
             return;
         switch (actionType) {
             case DELETE:
-                if (ask_before_delete) {
-                    Snackbar.make(main_activity.root_layout,
-                            String.format(main_activity.getString(R.string.ask_delete), name),
-                            Snackbar.LENGTH_SHORT)
-                            .setAction(R.string.action_delete, (view) -> cursor.deleteElement(id))
-                            .show();
-                } else
-                    cursor.deleteElement(id);
+                onClickDelete(name, id);
                 break;
             case SETTINGS:
                 CreatorDialog d = main_activity.creator_dialog;
@@ -115,6 +117,15 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
                 break;
         }
     }
+    public boolean moveHere(String entry_path){
+        try {
+            executor.move(entry_path, ".");
+            return true;
+        }catch (RuntimeException e){
+            main_activity.makeToast(e.getMessage(), true);
+            return false;
+        }
+    }
     public boolean back(){
         if(running_state)
             return false;
@@ -123,7 +134,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
     public void runFile(int idx) {
         //tasks.runTask(() -> {
             running_state = true;
-            executor.begin(cursor, idx);
+            executor.begin(idx);
             running_state = false;
         //});
     }
@@ -147,7 +158,15 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
             return;
         notifyDataSetChanged();
     }
-
+    public void goHelp(){
+        if(running_state)
+            return;
+        String json = main_activity.getString(R.string.help_text);
+        executor.makeDatabase("Help", json);
+        cursor.c.setRootPath();
+        cursor.c.reloadData();
+        cursor.enter(cursor.getElementIdx("Help"));
+    }
     @NonNull
     @Override
     public MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -168,7 +187,9 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
             holder.setError(String.format(main_activity.getString(R.string.empty_folder_view), name), "");
         }
     }
-
+    public String path_concat(String path1, String path2){
+        return executor.path_concat(path1, path2);
+    }
     @Override
     public int getItemCount() {
         int count = cursor.length();

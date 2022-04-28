@@ -1,6 +1,7 @@
 package com.matvey.perelman.notepad2.creator;
 
 import android.app.Dialog;
+import android.view.View;
 import android.widget.Button;
 import android.widget.RadioButton;
 
@@ -21,6 +22,8 @@ public class CreatorDialog extends Dialog {
     private final TextInputLayout layout;
     private final TextInputEditText name_text;
     private final Button btn_create;
+    private final Button btn_delete;
+    private final Button btn_cut;
     public final CreatorElement element;
     private boolean editing;
     public CreatorDialog(MainActivity context){
@@ -32,6 +35,10 @@ public class CreatorDialog extends Dialog {
         btn_executable = findViewById(R.id.rbtn_executable);
         layout = findViewById(R.id.name_layout);
         name_text = layout.findViewById(R.id.name_text);
+        btn_create = findViewById(R.id.btn_create);
+        btn_delete = findViewById(R.id.btn_delete);
+        btn_cut = findViewById(R.id.btn_cut);
+
         btn_file.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if(isChecked){
                 layout.setHint(R.string.new_file_text);
@@ -50,14 +57,14 @@ public class CreatorDialog extends Dialog {
                 element.updateType(EXECUTABLE);
             }
         });
-        btn_create = findViewById(R.id.btn_create);
+
         btn_create.setOnClickListener((view)->{
             String name = (name_text.getText() == null) ? "" : name_text.getText().toString();
 
             if(editing){
                 if(!name.isEmpty()) {
                     element.updateName(name);
-                    context.update_element(element, true);
+                    context.update_element(element);
                 }
             }else {
                 if (name.isEmpty()) {
@@ -74,18 +81,35 @@ public class CreatorDialog extends Dialog {
                     }
                 }
                 element.updateName(name);
-                context.update_element(element, false);
+                context.create_element(element);
             }
             hide();
             context.hideKeyboard();
         });
+        btn_delete.setOnClickListener((view)->{
+            hide();
+            context.hideKeyboard();
+            context.delete_element(element);
+        });
+        btn_cut.setOnClickListener((view)->{
+           hide();
+           context.hideKeyboard();
+           if(editing){
+               context.cut_element(element);
+           }else{
+               context.paste_element();
+           }
+        });
     }
-    public void startCreating(){
+    public void startCreating(boolean paste_available){
         editing = false;
         setChecked();
         element.setName("");
         name_text.setText("");
         btn_create.setText(R.string.action_create);
+        btn_cut.setText(R.string.action_paste);
+        btn_cut.setEnabled(paste_available);
+        btn_delete.setVisibility(View.INVISIBLE);
         show();
     }
     public void startEditing(){
@@ -93,6 +117,9 @@ public class CreatorDialog extends Dialog {
         setChecked();
         name_text.setText(element.getName());
         btn_create.setText(R.string.action_apply);
+        btn_cut.setText(R.string.action_cut);
+        btn_cut.setEnabled(true);
+        btn_delete.setVisibility(View.VISIBLE);
         show();
     }
     private void setChecked(){

@@ -33,6 +33,9 @@ public class MainActivity extends AppCompatActivity {
     public CreatorDialog creator_dialog;
     public int to_update_index;
 
+    private String path_to_cut;
+    private boolean to_cut_file;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,11 +60,12 @@ public class MainActivity extends AppCompatActivity {
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener((vie) -> {
             creator_dialog.element.setType((adapter.cursor.layer() > 0) ? ElementType.TEXT : ElementType.FOLDER);
-            creator_dialog.startCreating();
+            creator_dialog.startCreating((path_to_cut != null) && (adapter.cursor.layer() != 0 || !to_cut_file));
         });
         //load state
         loadState();
         to_update_index = -1;
+        path_to_cut = null;
     }
 
     @Override
@@ -84,6 +88,8 @@ public class MainActivity extends AppCompatActivity {
             adapter.setActionType(ActionType.SETTINGS);
         } else if (item == menu.getItem(3)) {
             adapter.ask_before_delete = item.isChecked();
+        } else if(item == menu.getItem(4)){
+            adapter.goHelp();
         }
         return false;
     }
@@ -98,14 +104,23 @@ public class MainActivity extends AppCompatActivity {
         intent.setAction(Intent.ACTION_VIEW);
         startActivity(intent);
     }
-
-    public void update_element(CreatorElement element, boolean editing) {
-        if (editing)
-            adapter.cursor.updateElement(element);
-        else
-            adapter.cursor.newElement(element);
+    public void create_element(CreatorElement element){
+        adapter.cursor.newElement(element);
     }
-
+    public void update_element(CreatorElement element) {
+        adapter.cursor.updateElement(element);
+    }
+    public void delete_element(CreatorElement element){
+        adapter.onClickDelete(element.getNameStart(), element.id);
+    }
+    public void cut_element(CreatorElement element){
+        path_to_cut = adapter.path_concat(adapter.cursor.path, element.getNameStart());
+        to_cut_file = element.getType() != ElementType.FOLDER;
+    }
+    public void paste_element(){
+        if(adapter.moveHere(path_to_cut))
+            path_to_cut = null;
+    }
     public void loadState() {
         SharedPreferences sp = getSharedPreferences("saved_state", Context.MODE_PRIVATE);
         adapter.actionType = ActionType.values()[sp.getInt("action_type", 0)];

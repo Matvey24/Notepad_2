@@ -23,6 +23,10 @@
     <string name="info_saved">Saved</string>
     <string name="action_rollback">Rollback</string>
     <string name="action_rollforward">Rollforward</string>
+    <string name="btn_menu_help">\'Help\' dir</string>
+    <string name="help_text">[{\"n\": \"main\", \"t\": 1, \"c\": \"Main help\"}]</string>
+    <string name="action_cut">Cut</string>
+    <string name="action_paste">Paste</string>
     <!-- Strings used for fragments for navigation -->
 
 </resources>
