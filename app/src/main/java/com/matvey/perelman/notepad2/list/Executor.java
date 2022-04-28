@@ -282,15 +282,17 @@ public class Executor implements AutoCloseable {
             path_paste = path_concat(path.path, path_paste);
             path_to = parsePath(path_paste);
         }
-        boolean copying_in = true;
-        for(int i = 0; i < path_from.size(); ++i){
-            if(!path_to.get(i).equals(path_from.get(i))){
-                copying_in = false;
-                break;
+        if(path_from.size() <= path_to.size()) {
+            boolean copying_in = true;
+            for (int i = 0; i < path_from.size(); ++i) {
+                if (!path_to.get(i).equals(path_from.get(i))) {
+                    copying_in = false;
+                    break;
+                }
             }
+            if (copying_in)
+                throw new RuntimeException("move: destination " + entry_cut + " is in " + path_paste);
         }
-        if(copying_in)
-            throw new RuntimeException("move: destination " + entry_cut + " is in " + path_paste);
         boolean can_change_parent = (path_from.size() != 1 && path_to.size() != 1 && path_from.get(1).equals(path_to.get(1)));
         if (!can_change_parent) {
             pyapi.callAttr("__java_api_copying_move", entry_cut, path_paste);
