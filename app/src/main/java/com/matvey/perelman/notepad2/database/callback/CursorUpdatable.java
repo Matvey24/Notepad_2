@@ -86,7 +86,10 @@ public class CursorUpdatable {
     }
     public void updateParent(int id, int new_parent_id){
         c.update_parent(id, new_parent_id);
-        updater.onChangeItem(this, id);
+        updater.onNewItem(this, id);
+    }
+    public void onCutItem(int id){
+        updater.onDeleteItem(this, id);
     }
     public int getElementIdx(String name){
         return c.getElementIdx(name);

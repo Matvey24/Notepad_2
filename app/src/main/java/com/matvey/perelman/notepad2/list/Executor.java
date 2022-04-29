@@ -84,7 +84,7 @@ public class Executor implements AutoCloseable {
         return list;
     }
 
-    public boolean cdGoFull(ArrayList<String> arr, int len) {
+    public boolean cdGoFull(ArrayList<String> arr, int len, boolean make_dir) {
         int i = 0;
         if (arr.get(0).equals("/")) {
             cursor.c.setRootPath();
@@ -97,17 +97,36 @@ public class Executor implements AutoCloseable {
 
         for (; i < len; ++i) {
             String s = arr.get(i);
-            if (cd(cursor, s))
+            if (cd(cursor, s, make_dir))
                 return true;
         }
         return false;
     }
 
-    public String cdGo(ArrayList<String> arr) {
-        if (cdGoFull(arr, arr.size() - 1))
+    public String cdGo(ArrayList<String> arr, boolean make_dir) {
+        if (cdGoFull(arr, arr.size() - 1, make_dir))
             return null;
         else
             return arr.get(arr.size() - 1);
+    }
+
+    public boolean cd(CursorUpdatable curs, String dir, boolean make_dir) {
+        if (dir.equals("..")) {
+            curs.back();
+            return false;
+        }
+        int idx = curs.getElementIdx(dir);
+        if (idx == -1) {
+            if(make_dir) {
+                defnewDir(dir);
+                idx = curs.getElementIdx(dir);
+            }else
+                return true;
+        }
+        if (!curs.c.isFolder(idx))
+            return true;
+        curs.enter(idx);
+        return false;
     }
 
     private void defnewFile(String file, boolean exec) {
@@ -192,24 +211,8 @@ public class Executor implements AutoCloseable {
         }
     }
 
-    public boolean cd(CursorUpdatable curs, String dir) {
-        if (dir.equals("..")) {
-            curs.back();
-            return false;
-        }
-        int idx = curs.getElementIdx(dir);
-        if (idx == -1) {
-            defnewDir(dir);
-            idx = curs.getElementIdx(dir);
-        }
-        if (!curs.c.isFolder(idx))
-            return true;
-        curs.enter(idx);
-        return false;
-    }
-
     public ArrayList<DatabaseElement> listFiles(String dir) {
-        if (cd(cursor, dir))
+        if (cd(cursor, dir, false))
             return null;
         ArrayList<DatabaseElement> list = new ArrayList<>();
         for (int i = 0; i < cursor.length(); ++i) {
@@ -263,7 +266,7 @@ public class Executor implements AutoCloseable {
     public String getName(String path) {
         ArrayList<String> p = parsePath(path);
         if (p.get(p.size() - 1).equals("..")) {
-            String s = cdGo(p);
+            cdGo(p, false);
             cursor.back();
             if (cursor.c.path.size() == 0)
                 return "/";
@@ -293,22 +296,33 @@ public class Executor implements AutoCloseable {
             if (copying_in)
                 throw new RuntimeException("move: destination " + entry_cut + " is in " + path_paste);
         }
+        if(path_from.size() - 1 == path_to.size()){
+            boolean equals = true;
+            for(int i = 0; i < path_to.size(); ++i){
+                if(!path_to.get(i).equals(path_from.get(i))){
+                    equals = false;
+                    break;
+                }
+            }
+            if(equals)
+                return;
+        }
         boolean can_change_parent = (path_from.size() != 1 && path_to.size() != 1 && path_from.get(1).equals(path_to.get(1)));
         if (!can_change_parent) {
             pyapi.callAttr("__java_api_copying_move", entry_cut, path_paste);
             return;
         }
-        String from_name = cdGo(path_from);
+        String from_name = cdGo(path_from, false);
         int idx = cursor.getElementIdx(from_name);
         if (idx == -1)
-            throw new RuntimeException("move: No to cut found at path " + entry_cut);
+            throw new RuntimeException("move: Nothing to cut found at path " + entry_cut);
         int id;
         if(cursor.layer() == 0)
             id = -1;
         else
             id = cursor.getElementId(idx);
 
-        String to_name = cdGo(path_to);
+        String to_name = cdGo(path_to, true);
         int parent_idx = cursor.getElementIdx(to_name);
         if (parent_idx == -1) {
             defnewDir(to_name);
@@ -319,9 +333,11 @@ public class Executor implements AutoCloseable {
             parent_id = -1;
         else
             parent_id = cursor.getElementId(parent_idx);
-        if(cd(cursor, to_name))
+        if(cd(cursor, to_name, true))
             throw new RuntimeException("move: destination is file");
         cursor.updateParent(id, parent_id);
+        cdGo(path_from, false);
+        cursor.onCutItem(id);
     }
 
     @Override
