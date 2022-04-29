@@ -11,7 +11,7 @@ def __java_api_run(string: str):
     saved_stderr = StringIO()
     sys.stdout = saved_stdout
     sys.stderr = saved_stderr
-    exec(string)
+    exec(string, globals(), globals())
     out = saved_stdout.getvalue()
     err = saved_stderr.getvalue()
     if len(out) != 0:
