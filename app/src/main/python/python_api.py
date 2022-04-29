@@ -35,7 +35,7 @@ class api_files:
     def to_py(path: str):
         if not api.exists(path):
             return None
-        if not api.is_dir(path):
+        if not api.is_folder(path):
             return {'n': api.get_name(path), 't': (ElementType.EXECUTABLE.ordinal() if api.is_executable(path) else ElementType.TEXT.ordinal()), 'c': api.read(path)}
 
         list = api.list_files(path)
