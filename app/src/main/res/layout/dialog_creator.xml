@@ -3,8 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    tools:context=".CreatorFragment">
+    android:layout_height="wrap_content">
 
     <ImageView
         android:id="@+id/img_text"
@@ -82,32 +81,32 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/img_executable" />
 
-    <Button
+    <ImageButton
         android:id="@+id/btn_delete"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
-        android:text="@string/action_delete"
+        android:src="@drawable/delete_image"
         app:layout_constraintBottom_toTopOf="@+id/btn_cut"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/img_text"
         app:layout_constraintTop_toBottomOf="@+id/name_layout" />
 
-    <Button
+    <ImageButton
         android:id="@+id/btn_cut"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
-        android:text="@string/action_cut"
+        android:src="?attr/actionModeCutDrawable"
         app:layout_constraintBottom_toTopOf="@+id/btn_create"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/img_folder"
         app:layout_constraintTop_toBottomOf="@+id/btn_delete" />
 
     <TextView
-        android:id="@+id/textView"
+        android:id="@+id/tv_dialog_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
@@ -125,7 +124,7 @@
         android:layout_marginEnd="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView">
+        app:layout_constraintTop_toBottomOf="@+id/tv_dialog_name">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/name_text"

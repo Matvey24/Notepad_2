@@ -1,6 +1,7 @@
 package com.matvey.perelman.notepad2.list;
 
 import com.chaquo.python.PyObject;
+import com.matvey.perelman.notepad2.R;
 import com.matvey.perelman.notepad2.creator.CreatorElement;
 import com.matvey.perelman.notepad2.database.callback.CursorUpdatable;
 import com.matvey.perelman.notepad2.database.DatabaseElement;
@@ -34,9 +35,9 @@ public class Executor implements AutoCloseable {
         }
     }
 
-    public void makeDatabase(String name, String json) {
+    public void makeDatabase(String json) {
         cursor = new CursorUpdatable(path.c.connection, null);
-        pyapi.callAttr("__java_api_from_json", "/" + name, json);
+        pyapi.callAttr("__java_api_from_json", "/", json);
     }
 
     public String getPath() {
@@ -140,7 +141,7 @@ public class Executor implements AutoCloseable {
         int idx = cursor.getElementIdx(path);
         if (idx == -1) {
             if (cursor.layer() == 0)
-                throw new RuntimeException("Could not make file in root directory");
+                throw new RuntimeException(PythonAPI.activity.getString(R.string.error_root_file));
             defnewFile(path, false);
         }
     }
@@ -157,7 +158,7 @@ public class Executor implements AutoCloseable {
         if (idx == -1)
             defnewDir(dir);
         else if (!cursor.c.isFolder(idx))
-            throw new RuntimeException("Could not mkdir, file with the same name exists: " + dir);
+            throw new RuntimeException(String.format(PythonAPI.activity.getString(R.string.error_file2folder), dir));
     }
 
     public boolean delete(String entry) {
@@ -175,11 +176,11 @@ public class Executor implements AutoCloseable {
         int idx = cursor.getElementIdx(file);
         if (idx == -1) {
             if (cursor.layer() == 0)
-                throw new RuntimeException("Could not make file in root directory");
+                throw new RuntimeException(PythonAPI.activity.getString(R.string.error_root_file));
             defnewFile(file, false);
             idx = cursor.getElementIdx(file);
         } else if (cursor.c.isFolder(idx)) {
-            throw new RuntimeException("Could not write to folder: " + file);
+            throw new RuntimeException(PythonAPI.activity.getString(R.string.error_folder2file));
         }
         delement.id = cursor.getElementId(idx);
         delement.content = content;
@@ -190,7 +191,7 @@ public class Executor implements AutoCloseable {
     public String read(String file) {
         int idx = cursor.getElementIdx(file);
         if (idx == -1 || cursor.c.isFolder(idx))
-            throw new RuntimeException("Could not read: file " + file + " does not exist");
+            throw new RuntimeException(PythonAPI.activity.getString(R.string.error_read_existence));
         cursor.getElement(delement, idx);
         return delement.content;
     }
@@ -199,7 +200,7 @@ public class Executor implements AutoCloseable {
         int idx = cursor.getElementIdx(file);
         if (idx == -1) {
             if (cursor.layer() == 0)
-                throw new RuntimeException("Could not make file in root directory");
+                throw new RuntimeException(PythonAPI.activity.getString(R.string.error_root_file));
             defnewFile(file, mode);
         } else {
             celement.id = cursor.getElementId(idx);
@@ -294,7 +295,7 @@ public class Executor implements AutoCloseable {
                 }
             }
             if (copying_in)
-                throw new RuntimeException("move: destination " + entry_cut + " is in " + path_paste);
+                throw new RuntimeException(String.format(PythonAPI.activity.getString(R.string.error_move_dest), entry_cut, path_paste));
         }
         if(path_from.size() - 1 == path_to.size()){
             boolean equals = true;
@@ -315,7 +316,7 @@ public class Executor implements AutoCloseable {
         String from_name = cdGo(path_from, false);
         int idx = cursor.getElementIdx(from_name);
         if (idx == -1)
-            throw new RuntimeException("move: Nothing to cut found at path " + entry_cut);
+            throw new RuntimeException(String.format(PythonAPI.activity.getString(R.string.error_move_cut), entry_cut));
         int id;
         if(cursor.layer() == 0)
             id = -1;
@@ -334,7 +335,7 @@ public class Executor implements AutoCloseable {
         else
             parent_id = cursor.getElementId(parent_idx);
         if(cd(cursor, to_name, true))
-            throw new RuntimeException("move: destination is file");
+            throw new RuntimeException(PythonAPI.activity.getString(R.string.error_move_file));
         cursor.updateParent(id, parent_id);
         cdGo(path_from, false);
         cursor.onCutItem(id);

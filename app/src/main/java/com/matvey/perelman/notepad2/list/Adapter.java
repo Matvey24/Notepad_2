@@ -76,6 +76,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
                 notifyDataSetChanged();
             }
         });
+        cursor.updatePath();
         this.main_activity = main_activity;
         element_buff = new DatabaseElement();
         tasks = new Tasks();
@@ -162,7 +163,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
         if(running_state)
             return;
         String json = main_activity.getString(R.string.help_text);
-        executor.makeDatabase("Help", json);
+        executor.makeDatabase(json);
         cursor.c.setRootPath();
         cursor.c.reloadData();
         cursor.enter(cursor.getElementIdx("Help"));
@@ -199,6 +200,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
     }
 
     public void onClose() {
+        running_state = true;
         connection.close();
         tasks.disposeOnFinish();
     }

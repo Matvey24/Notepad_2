@@ -1,6 +1,7 @@
 package com.matvey.perelman.notepad2.list;
 
 import com.matvey.perelman.notepad2.MainActivity;
+import com.matvey.perelman.notepad2.R;
 import com.matvey.perelman.notepad2.database.DatabaseElement;
 
 import java.util.ArrayList;
@@ -17,7 +18,7 @@ public class PythonAPI {
     }
     private static void checkPath(String end_path){
         if(end_path == null)
-            throw new RuntimeException("Nonexistent path");
+            throw new RuntimeException(activity.getString(R.string.error_bad_path));
     }
     public static void touch(String tpath){
         String file = executor.cdGo(executor.parsePath(tpath), true);
@@ -61,6 +62,11 @@ public class PythonAPI {
         String entry = executor.cdGo(executor.parsePath(path), false);
         checkPath(entry);
         return executor.exists(entry);
+    }
+    public static ElementType get_type(String path){
+        String entry = executor.cdGo(executor.parsePath(path), false);
+        checkPath(entry);
+        return executor.getType(entry);
     }
     public static boolean is_folder(String path){
         String entry = executor.cdGo(executor.parsePath(path), false);

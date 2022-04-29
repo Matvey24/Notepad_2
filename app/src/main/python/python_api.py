@@ -36,18 +36,12 @@ class api_files:
         if not api.exists(path):
             return None
         if not api.is_folder(path):
-            return {'n': api.get_name(path), 't': (ElementType.EXECUTABLE.ordinal() if api.is_executable(path) else ElementType.TEXT.ordinal()), 'c': api.read(path)}
+            return {'n': api.get_name(path), 't': api.get_type(path).ordinal(), 'c': api.read(path)}
 
         list = api.list_files(path)
         l = []
         for i in range(list.size()):
-            el = list.get(i)
-            if el.type == ElementType.FOLDER:
-                d = {'n': el.name, 't': el.type.ordinal(), 'f': api_files.to_py(api.path_concat(path, el.name))}
-                l.append(d)
-            else:
-                d = {'n': el.name, 't': el.type.ordinal(), 'c': el.content}
-                l.append(d)
+            l.append(api_files.to_py(api.path_concat(path, list.get(i).name)))
         return {'n': api.get_name(path), 't': ElementType.FOLDER.ordinal(), 'f': l}
 
     def from_py(path: str, d: dict):
@@ -65,9 +59,9 @@ class api_files:
             api_files.from_py(f_path, el)
 
     def to_json(path: str):
-        return json.dumps(api_filer.to_py(path))
+        return json.dumps(api_files.to_py(path))
 
     def from_json(path: str, d: str, replace = True):
-        if not replace and api.exists(path):
-            return
-        api_files.from_py(path, json.loads(d))
+        d = json.loads(d)
+        if replace or not api.exists(api.path_concat(path, d['n'])):
+            api_files.from_py(path, d)
