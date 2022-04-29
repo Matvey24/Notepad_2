@@ -17,7 +17,7 @@ public class PythonAPI {
     }
     private static void checkPath(String end_path){
         if(end_path == null)
-            throw new RuntimeException("Path contains file instead of folder");
+            throw new RuntimeException("Nonexistent path");
     }
     public static void touch(String tpath){
         String file = executor.cdGo(executor.parsePath(tpath), true);
@@ -62,7 +62,7 @@ public class PythonAPI {
         checkPath(entry);
         return executor.exists(entry);
     }
-    public static boolean is_dir(String path){
+    public static boolean is_folder(String path){
         String entry = executor.cdGo(executor.parsePath(path), false);
         checkPath(entry);
         return executor.isDir(entry);
