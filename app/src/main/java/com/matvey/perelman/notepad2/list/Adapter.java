@@ -101,7 +101,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
 
     public boolean moveHere(String entry_path) {
         try {
-            executor.move(entry_path, ".");
+            executor.move(entry_path, cursor.path_t);
             return true;
         } catch (RuntimeException e) {
             main_activity.makeToast(e.getMessage(), true);
