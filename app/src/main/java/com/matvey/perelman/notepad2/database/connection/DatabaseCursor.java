@@ -1,6 +1,7 @@
 package com.matvey.perelman.notepad2.database.connection;
 
 import android.database.Cursor;
+import android.os.Looper;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -79,10 +80,6 @@ public class DatabaseCursor implements IDListener {
         return -1;
     }
 
-    public boolean equalPath(DatabaseCursor other) {
-        return this == other || path_id == other.path_id;
-    }
-
     public void setRootPath() {
         path_id = 0;
         updatePath();
@@ -91,50 +88,39 @@ public class DatabaseCursor implements IDListener {
 
     @Override
     public void onNewItem(long id) {
-        context.runOnUiThread(() -> {
-            reloadData();
-            int idx = indexOf(id);
-            if (idx != -1)
-                listener.onNewItem(idx);
+        if(Thread.currentThread() == Looper.getMainLooper().getThread()){
+            uiOnNewItem(id);
+        }else{
+            context.runOnUiThread(()->{
+                uiOnNewItem(id);
+                await();
+            });
             await();
-        });
-        await();
+        }
     }
-
     @Override
     public void onDeleteItem(long id) {
-        context.runOnUiThread(() -> {
-            int idx = indexOf(id);
-            if (idx == -1)
-                return;
-            reloadData();
-            if (indexOf(id) == -1)
-                listener.onDeleteItem(idx);
+        if (Thread.currentThread() == Looper.getMainLooper().getThread()) {
+            uiOnDeleteItem(id);
+        } else {
+            context.runOnUiThread(() -> {
+                uiOnDeleteItem(id);
+                await();
+            });
             await();
-        });
-        await();
+        }
     }
-
     @Override
     public void onChangeItem(long id) {
-        context.runOnUiThread(() -> {
-            int idx1 = indexOf(id);
-            reloadData();
-            int idx2 = indexOf(id);
-            if (idx1 == -1 && idx2 == -1)
-                return;
-            if (idx2 == -1) {
-                listener.onDeleteItem(idx1);
-                return;
-            }
-            if (idx1 == -1) {
-                listener.onNewItem(idx2);
-                return;
-            }
-            listener.onChangeItem(idx1, idx2);
+        if(Thread.currentThread() == Looper.getMainLooper().getThread()){
+            uiOnChangeItem(id);
+        }else {
+            context.runOnUiThread(() -> {
+                uiOnChangeItem(id);
+                await();
+            });
             await();
-        });
-        await();
+        }
     }
 
     @Override
@@ -151,7 +137,36 @@ public class DatabaseCursor implements IDListener {
         } catch (Exception ignored) {
         }
     }
-
+    private void uiOnNewItem(long id){
+        reloadData();
+        int idx = indexOf(id);
+        if (idx != -1)
+            listener.onNewItem(idx);
+    }
+    private void uiOnDeleteItem(long id){
+        int idx = indexOf(id);
+        if (idx == -1)
+            return;
+        reloadData();
+        if (indexOf(id) == -1)
+            listener.onDeleteItem(idx);
+    }
+    private void uiOnChangeItem(long id){
+        int idx1 = indexOf(id);
+        reloadData();
+        int idx2 = indexOf(id);
+        if (idx1 == -1 && idx2 == -1)
+            return;
+        if (idx2 == -1) {
+            listener.onDeleteItem(idx1);
+            return;
+        }
+        if (idx1 == -1) {
+            listener.onNewItem(idx2);
+            return;
+        }
+        listener.onChangeItem(idx1, idx2);
+    }
     @Override
     public long getPathID() {
         return path_id;
