@@ -1,10 +1,14 @@
 package com.matvey.perelman.notepad2.list;
 
+import android.database.Cursor;
+
+import androidx.annotation.StringRes;
+
 import com.chaquo.python.PyObject;
 import com.matvey.perelman.notepad2.R;
 import com.matvey.perelman.notepad2.creator.CreatorElement;
-import com.matvey.perelman.notepad2.database.callback.CursorUpdatable;
 import com.matvey.perelman.notepad2.database.DatabaseElement;
+import com.matvey.perelman.notepad2.database.connection.DatabaseConnection;
 
 import java.util.ArrayList;
 
@@ -12,50 +16,49 @@ public class Executor implements AutoCloseable {
     private final CreatorElement celement;
     private final DatabaseElement delement;
     private PyObject pyapi;
-    private CursorUpdatable cursor;
-    private final CursorUpdatable path;
+    private DatabaseConnection conn;
+    private long folder_id;
+    private long curr_path;
 
-    public Executor(CursorUpdatable path) {
-        this.path = path;
+    public Executor(DatabaseConnection connection) {
+        this.conn = connection;
         celement = new CreatorElement();
         delement = new DatabaseElement();
-        cursor = new CursorUpdatable(path.c.connection, null);
     }
 
     public void setPython(PyObject p) {
         this.pyapi = p;
     }
 
-    public void begin(int file_idx) {
-        path.getElement(delement, file_idx);
+    public void begin(long id, long parent) {
+        String content = conn.getContent(id);
+        folder_id = parent;
         try {
-            pyapi.callAttrThrows("__java_api_run", delement.content);
+            pyapi.callAttrThrows("__java_api_run", content);
         } catch (Throwable t) {
+            t.printStackTrace();
             PythonAPI.toast_l(t.getMessage());
         }
     }
 
     public void makeDatabase(String json) {
-        cursor = new CursorUpdatable(path.c.connection, null);
         pyapi.callAttr("__java_api_from_json", "/", json);
     }
 
     public String getPath() {
-        return path.path;
+        return conn.buildPath(folder_id);
     }
 
     public ArrayList<String> parsePath(String path) {
-        if(path.trim().equals("/")){
+        if (path.trim().equals("/")) {
             ArrayList<String> list = new ArrayList<>();
             list.add(path);
             return list;
         }
         String[] arr = path.split("/");
         ArrayList<String> list = new ArrayList<>();
-        if (arr.length == 0) {
-            list.add(".");
+        if (arr.length == 0)
             return list;
-        }
         int i = 0;
         if (arr[0].trim().isEmpty()) {
             list.add("/");
@@ -80,170 +83,173 @@ public class Executor implements AutoCloseable {
                     break;
             }
         }
-        if (list.isEmpty())
-            list.add(".");
         return list;
     }
 
-    public boolean cdGoFull(ArrayList<String> arr, int len, boolean make_dir) {
+    //get name of entry, go to folder, that contains this entry
+    public String cdGoEntry(ArrayList<String> arr, boolean make_dir) {
+        if(arr.size() == 0){
+            curr_path = conn.getParent(folder_id);
+            return conn.getName(folder_id);
+        }
         int i = 0;
-        if (arr.get(0).equals("/")) {
-            cursor.c.setRootPath();
+        if(arr.get(0).equals("/")){
+            curr_path = 0;
             i = 1;
-        } else
-            cursor.c.copyPath(this.path.c);
+            if(arr.size() == 1)
+                return "/";
+        }else
+            curr_path = folder_id;
 
-        cursor.updatePath();
-        cursor.reloadData();
-
-        for (; i < len; ++i) {
-            String s = arr.get(i);
-            if (cd(cursor, s, make_dir))
-                return true;
+        for(; i < arr.size() - 1; ++i){
+            if ("..".equals(arr.get(i)))
+                curr_path = conn.getParent(curr_path);
+            else {
+                long new_path = conn.getID(curr_path, arr.get(i));
+                if(new_path == -1) {
+                    if(make_dir)
+                        curr_path = defnewDir(arr.get(i));
+                    else
+                        throw new RuntimeException(PythonAPI.activity.getString(R.string.error_bad_path));
+                }else if(conn.getType(new_path) != ElementType.FOLDER)
+                    throw new RuntimeException(String.format(PythonAPI.activity.getString(R.string.error_file2folder), arr.get(i)));
+                else
+                    curr_path = new_path;
+            }
         }
-        return false;
+
+        String last = arr.get(arr.size() - 1);
+        if(last.equals("..")){
+            String name = conn.getName(curr_path);
+            curr_path = conn.getParent(curr_path);
+            return name;
+        }
+        return last;
+    }
+    //go to the folder
+    public void cdGo(ArrayList<String> arr, boolean make_dir){
+        if(arr.size() == 0){
+            curr_path = folder_id;
+            return;
+        }
+        int i = 0;
+        if(arr.get(0).equals("/")){
+            curr_path = 0;
+            i = 1;
+        }else
+            curr_path = folder_id;
+
+        for(; i < arr.size(); ++i){
+            if("..".equals(arr.get(i)))
+                curr_path = conn.getParent(curr_path);
+            else{
+                long new_path = conn.getID(curr_path, arr.get(i));
+                if(new_path == -1){
+                    if(make_dir)
+                        defnewDir(arr.get(i));
+                    else
+                        throw new RuntimeException(PythonAPI.activity.getString(R.string.error_bad_path));
+                }else if(conn.getType(new_path) != ElementType.FOLDER)
+                    throw new RuntimeException(String.format(PythonAPI.activity.getString(R.string.error_file2folder), arr.get(i)));
+                else
+                    curr_path = new_path;
+            }
+        }
     }
 
-    public String cdGo(ArrayList<String> arr, boolean make_dir) {
-        if (cdGoFull(arr, arr.size() - 1, make_dir))
-            return null;
-        else
-            return arr.get(arr.size() - 1);
-    }
-
-    public boolean cd(CursorUpdatable curs, String dir, boolean make_dir) {
-        if (dir.equals("..")) {
-            curs.back();
-            return false;
-        }
-        int idx = curs.getElementIdx(dir);
-        if (idx == -1) {
-            if(make_dir) {
-                defnewDir(dir);
-                idx = curs.getElementIdx(dir);
-            }else
-                return true;
-        }
-        if (!curs.c.isFolder(idx))
-            return true;
-        curs.enter(idx);
-        return false;
-    }
-
-    private void defnewFile(String file, boolean exec) {
+    private long defnewFile(String file, boolean exec) {
         celement.setName(file);
         celement.setType(exec ? ElementType.EXECUTABLE : ElementType.TEXT);
-        cursor.newElement(celement);
-        cursor.reloadData();
+        celement.parent = curr_path;
+        return conn.newElement(celement);
     }
 
-    public void touch(String path) {
-        int idx = cursor.getElementIdx(path);
-        if (idx == -1) {
-            if (cursor.layer() == 0)
-                throw new RuntimeException(PythonAPI.activity.getString(R.string.error_root_file));
-            defnewFile(path, false);
-        }
-    }
-
-    private void defnewDir(String dir) {
+    private long defnewDir(String dir) {
         celement.setName(dir);
         celement.setType(ElementType.FOLDER);
-        cursor.newElement(celement);
-        cursor.reloadData();
+        celement.parent = curr_path;
+        return conn.newElement(celement);
+    }
+
+    public void touch(String entry) {
+        long id = conn.getID(curr_path, entry);
+        if (id == -1)
+            defnewFile(entry, false);
     }
 
     public void mkdir(String dir) {
-        int idx = cursor.getElementIdx(dir);
-        if (idx == -1)
+        long id = conn.getID(curr_path, dir);
+        if (id == -1)
             defnewDir(dir);
-        else if (!cursor.c.isFolder(idx))
+        else if (conn.getType(id) != ElementType.FOLDER)
             throw new RuntimeException(String.format(PythonAPI.activity.getString(R.string.error_file2folder), dir));
     }
 
     public boolean delete(String entry) {
-        int idx = cursor.getElementIdx(entry);
-        if (idx == -1) {
+        long id = conn.getID(curr_path, entry);
+        if (id < 1) {
             return false;
         } else {
-            cursor.deleteElement(cursor.getElementId(idx));
-            cursor.reloadData();
+            conn.deleteElement(curr_path, id);
             return true;
         }
     }
 
     public void write(String file, String content) {
-        int idx = cursor.getElementIdx(file);
-        if (idx == -1) {
-            if (cursor.layer() == 0)
-                throw new RuntimeException(PythonAPI.activity.getString(R.string.error_root_file));
-            defnewFile(file, false);
-            idx = cursor.getElementIdx(file);
-        } else if (cursor.c.isFolder(idx)) {
+        long id = conn.getID(curr_path, file);
+        if (id == -1) {
+            id = defnewFile(file, false);
+        } else if (conn.getType(id) == ElementType.FOLDER) {
             throw new RuntimeException(PythonAPI.activity.getString(R.string.error_folder2file));
         }
-        delement.id = cursor.getElementId(idx);
+        delement.id = id;
+        delement.parent = curr_path;
         delement.content = content;
-        cursor.updateTextData(delement);
-        cursor.reloadData();
+        conn.updateTextData(delement);
     }
 
     public String read(String file) {
-        int idx = cursor.getElementIdx(file);
-        if (idx == -1 || cursor.c.isFolder(idx))
-            throw new RuntimeException(PythonAPI.activity.getString(R.string.error_read_existence));
-        cursor.getElement(delement, idx);
-        return delement.content;
+        long id = conn.getID(curr_path, file);
+        if (id == -1 || conn.getType(id) == ElementType.FOLDER)
+            throw new RuntimeException(String.format(PythonAPI.activity.getString(R.string.error_read_existence), file));
+        return conn.getContent(id);
     }
 
     public void executable(String file, boolean mode) {
-        int idx = cursor.getElementIdx(file);
-        if (idx == -1) {
-            if (cursor.layer() == 0)
-                throw new RuntimeException(PythonAPI.activity.getString(R.string.error_root_file));
+        long id = conn.getID(curr_path, file);
+        if (id == -1) {
             defnewFile(file, mode);
+        } else if (conn.getType(id) == ElementType.FOLDER) {
+            throw new RuntimeException(String.format("Could not make folder %s executable", file));
         } else {
-            celement.id = cursor.getElementId(idx);
+            conn.getElement(id, delement);
+            celement.id = delement.id;
+            celement.parent = delement.parent;
             celement.setName(file);
-            celement.setType(cursor.c.getType(idx));
+            celement.setType(delement.type);
             celement.updateType(mode ? ElementType.EXECUTABLE : ElementType.TEXT);
-            cursor.updateElement(celement);
-            cursor.reloadData();
+
+            conn.updateElement(celement);
         }
     }
 
-    public ArrayList<DatabaseElement> listFiles(String dir) {
-        if (cd(cursor, dir, false))
-            return null;
+    public ArrayList<DatabaseElement> listFiles() {
         ArrayList<DatabaseElement> list = new ArrayList<>();
-        for (int i = 0; i < cursor.length(); ++i) {
+        Cursor cursor = conn.getListFiles(curr_path);
+        for (int i = 0; i < cursor.getCount(); ++i) {
             DatabaseElement de = new DatabaseElement();
-            cursor.getElement(de, i);
+            conn.getElement(cursor, de, curr_path, i);
             list.add(de);
         }
         return list;
     }
 
     public boolean exists(String entry) {
-        int idx = cursor.getElementIdx(entry);
-        return idx != -1;
-    }
-
-    public boolean isDir(String entry) {
-        ElementType type = getType(entry);
-        return type == ElementType.FOLDER;
-    }
-
-    public boolean isExecutable(String entry) {
-        ElementType type = getType(entry);
-        return type == ElementType.EXECUTABLE;
+        return conn.getID(curr_path, entry) != -1;
     }
 
     public ElementType getType(String entry) {
-        int idx = cursor.getElementIdx(entry);
-        if (idx == -1)
-            return null;
-        return cursor.c.getType(idx);
+        return conn.getType(conn.getID(curr_path, entry));
     }
 
     public String path_concat(String path1, String path2) {
@@ -264,85 +270,60 @@ public class Executor implements AutoCloseable {
         }
     }
 
+    public int rename(String name1, String name2) {
+        long id = conn.getID(curr_path, name1);
+        if (id < 1)
+            return 1;
+        long id2 = conn.getID(curr_path, name2);
+        if (id2 != -1)
+            return 2;
+        conn.getElement(id, delement);
+        celement.id = delement.id;
+        celement.parent = delement.parent;
+        celement.setType(delement.type);
+        celement.setName(delement.name);
+        celement.updateName(name2);
+        conn.updateElement(celement);
+        return 0;
+    }
+
     public String getName(String path) {
         ArrayList<String> p = parsePath(path);
         if (p.get(p.size() - 1).equals("..")) {
-            cdGo(p, false);
-            cursor.back();
-            if (cursor.c.path.size() == 0)
-                return "/";
-            return cursor.c.path.get(cursor.c.path.size() - 1);
+            return cdGoEntry(p, false);
         } else
             return p.get(p.size() - 1);
     }
+
     public void move(String entry_cut, String path_paste) {
         ArrayList<String> path_from = parsePath(entry_cut);
-        if (!path_from.get(0).equals("/")) {
-            entry_cut = path_concat(path.path, entry_cut);
-            path_from = parsePath(entry_cut);
-        }
+        String name = cdGoEntry(path_from, false);
+
+        long from_dir = curr_path;
+        long from_id = conn.getID(curr_path, name);
+        if(from_id < 1)//ничего не найдено по данному пути
+            throw new RuntimeException(getString(R.string.error_bad_path));
+
         ArrayList<String> path_to = parsePath(path_paste);
-        if (!path_to.get(0).equals("/")) {
-            path_paste = path_concat(path.path, path_paste);
-            path_to = parsePath(path_paste);
-        }
-        if(path_from.size() <= path_to.size()) {
-            boolean copying_in = true;
-            for (int i = 0; i < path_from.size(); ++i) {
-                if (!path_to.get(i).equals(path_from.get(i))) {
-                    copying_in = false;
-                    break;
-                }
-            }
-            if (copying_in)
-                throw new RuntimeException(String.format(PythonAPI.activity.getString(R.string.error_move_dest), entry_cut, path_paste));
-        }
-        if(path_from.size() - 1 == path_to.size()){
-            boolean equals = true;
-            for(int i = 0; i < path_to.size(); ++i){
-                if(!path_to.get(i).equals(path_from.get(i))){
-                    equals = false;
-                    break;
-                }
-            }
-            if(equals)
-                return;
-        }
-        boolean can_change_parent = (path_from.size() != 1 && path_to.size() != 1 && path_from.get(1).equals(path_to.get(1)));
-        if (!can_change_parent) {
-            pyapi.callAttr("__java_api_copying_move", entry_cut, path_paste);
+        cdGo(path_to, true);
+        long to_dir = curr_path;
+
+        if (conn.isParentFor(from_id, to_dir))//перемещение внутрь себя
+            throw new RuntimeException(String.format(getString(R.string.error_move_dest), entry_cut, path_paste));
+
+        if (from_dir == to_dir)//пункт назначения == пункту отправления
             return;
-        }
-        String from_name = cdGo(path_from, false);
-        int idx = cursor.getElementIdx(from_name);
-        if (idx == -1)
-            throw new RuntimeException(String.format(PythonAPI.activity.getString(R.string.error_move_cut), entry_cut));
-        int id;
-        if(cursor.layer() == 0)
-            id = -1;
-        else
-            id = cursor.getElementId(idx);
 
-        String to_name = cdGo(path_to, true);
-        int parent_idx = cursor.getElementIdx(to_name);
-        if (parent_idx == -1) {
-            defnewDir(to_name);
-            parent_idx = cursor.getElementIdx(to_name);
-        }
-        int parent_id;
-        if(cursor.layer() == 0)
-            parent_id = -1;
-        else
-            parent_id = cursor.getElementId(parent_idx);
-        if(cd(cursor, to_name, true))
-            throw new RuntimeException(PythonAPI.activity.getString(R.string.error_move_file));
-        cursor.updateParent(id, parent_id);
-        cdGo(path_from, false);
-        cursor.onCutItem(id);
+        long err_id = conn.getID(to_dir, name);
+        if(err_id != -1)
+            conn.deleteElement(to_dir, err_id);
+        conn.updateParent(from_id, from_dir, to_dir);
     }
-
+    public String getString(@StringRes int id){
+        return PythonAPI.activity.getString(id);
+    }
     @Override
     public void close() {
-        cursor.close();
+        conn.close();
     }
 }

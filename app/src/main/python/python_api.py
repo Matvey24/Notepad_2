@@ -15,20 +15,15 @@ def __java_api_run(string: str):
     out = saved_stdout.getvalue()
     err = saved_stderr.getvalue()
     if len(out) != 0:
-        api.write(api.path_concat(api.get_path(), 'out.txt'), out)
+        api.write('out.txt', out)
     if len(err) != 0:
-        api.write(api.path_concat(api.get_path(), 'err.txt'), err)
+        api.write('err.txt', err)
 
     saved_stdout.close()
     saved_stderr.close()
 
 def __java_api_from_json(path: str, st: str):
     api_files.from_json(path, st, False)
-
-def __java_api_copying_move(path_from: str, path_to: str):
-    obj = api_files.to_py(path_from)
-    api_files.from_py(path_to, obj)
-    api.delete(path_from)
 
 #default lib
 class api_files:

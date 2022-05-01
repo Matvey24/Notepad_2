@@ -16,28 +16,25 @@ public class MyViewHolder extends RecyclerView.ViewHolder {
     private final ImageView type_image;
     private final ImageButton action_btn;
     private boolean error_message;
-    private int id;
-    private String name;
-    private ElementType type;
+    public final DatabaseElement element;
     public MyViewHolder(View itemView, Adapter adapter){
         super(itemView);
+        element = new DatabaseElement();
         name_tv = itemView.findViewById(R.id.name_tv);
         content_tv = itemView.findViewById(R.id.content_tv);
         type_image = itemView.findViewById(R.id.type_image);
         action_btn = itemView.findViewById(R.id.action_btn);
-        action_btn.setOnClickListener((view)->adapter.onClickAction(name, id, type, getAdapterPosition()));
+        action_btn.setOnClickListener((view)->adapter.onClickSettings(element));
         itemView.setOnClickListener((view)->{
             if(!error_message)
-                adapter.onClickField(name, id, getAdapterPosition(), type);
+                adapter.onClickField(element, getAdapterPosition());
         });
     }
-    public void setValues(DatabaseElement element, ActionType a_type){
-        this.id = element.id;
-        this.type = element.type;
-        name = element.name;
+    public void setValues(){
+        action_btn.setVisibility(View.VISIBLE);
         name_tv.setText(element.name);
         content_tv.setText(element.content);
-        switch (type){
+        switch (element.type){
             case FOLDER:
                 type_image.setImageResource(R.drawable.folder_image);
                 break;
@@ -48,20 +45,6 @@ public class MyViewHolder extends RecyclerView.ViewHolder {
                 type_image.setImageResource(R.drawable.executable_image);
                 break;
         }
-        if(a_type == ActionType.DISABLED)
-            action_btn.setVisibility(View.INVISIBLE);
-        else {
-            action_btn.setVisibility(View.VISIBLE);
-            switch (a_type){
-                case DELETE:
-                    action_btn.setImageResource(R.drawable.delete_image);
-                    break;
-                case SETTINGS:
-                    action_btn.setImageResource(R.drawable.settings_image);
-                    break;
-            }
-        }
-        itemView.setFocusable(true);
         error_message = false;
     }
     public void setError(String name, String description){

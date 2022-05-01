@@ -14,10 +14,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.matvey.perelman.notepad2.database.callback.CursorUpdatable;
-import com.matvey.perelman.notepad2.database.connection.DatabaseCursor;
-import com.matvey.perelman.notepad2.database.helpers.DatabaseFileHelper;
-import com.matvey.perelman.notepad2.utils.StringEncoder;
+import com.matvey.perelman.notepad2.database.connection.DatabaseConnection;
+import com.matvey.perelman.notepad2.database.helpers.DatabaseHelper;
 
 import java.util.ArrayList;
 
@@ -27,7 +25,7 @@ public class EditorActivity extends AppCompatActivity {
     private EditText text_editor;
     private MenuItem btn_save, btn_rollback, btn_rollforward;
 
-    private int id;
+    private long id;
 
     private ArrayList<String> versions;
     private int position;
@@ -46,13 +44,11 @@ public class EditorActivity extends AppCompatActivity {
         Intent intent = getIntent();
         setTitle(intent.getStringExtra("name"));
         versions.add(intent.getStringExtra("content"));
-        id = intent.getIntExtra("id", -1);
-        String database_name = intent.getStringExtra("database_name");
-
+        id = intent.getLongExtra("id", -1);
 
         text_editor.setText(versions.get(0));
 
-        database = new DatabaseFileHelper(this, database_name).getWritableDatabase();
+        database = new DatabaseHelper(this).getWritableDatabase();
         text_editor.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -110,7 +106,7 @@ public class EditorActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         makeVersion();
-        DatabaseCursor.resetTextData(database, id, versions.get(position));
+        DatabaseConnection.resetTextData(database, id, versions.get(position));
         hideKeyboard();
     }
 

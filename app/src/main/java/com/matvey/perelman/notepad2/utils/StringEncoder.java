@@ -24,7 +24,7 @@ public class StringEncoder {
         return s;
     }
     public static String decode(String s){
-        if(s.isEmpty())
+        if(s == null || s.isEmpty())
             return s;
         sb.ensureCapacity(s.length());
         for(int i = 0; i < s.length(); ++i){

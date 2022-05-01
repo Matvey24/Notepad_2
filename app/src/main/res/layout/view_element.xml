@@ -53,7 +53,7 @@
         app:layout_constraintBottom_toBottomOf="@+id/type_image"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@+id/type_image"
-        app:srcCompat="?attr/actionModeCutDrawable" />
+        app:srcCompat="@drawable/settings_image" />
 
     <View
         android:id="@+id/divider"

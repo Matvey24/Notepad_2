@@ -24,11 +24,6 @@
             app:subtitleTextColor="@color/text_primary"
             app:titleTextColor="@color/text_primary" />
 
-        <include
-            layout="@layout/searcher"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout

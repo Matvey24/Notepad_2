@@ -105,8 +105,10 @@ public class CreatorDialog extends Dialog {
            }
         });
     }
-    public void startCreating(boolean paste_available){
+    public void startCreating(long parent, boolean paste_available){
         editing = false;
+        element.setType(TEXT);
+        element.parent = parent;
         setChecked();
         tv_dialog_name.setText(R.string.create_item_text);
         element.setName("");

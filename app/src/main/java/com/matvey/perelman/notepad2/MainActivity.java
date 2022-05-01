@@ -8,11 +8,8 @@ import android.os.Bundle;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.matvey.perelman.notepad2.creator.CreatorElement;
-import com.matvey.perelman.notepad2.list.ActionType;
 import com.matvey.perelman.notepad2.list.Adapter;
 import com.matvey.perelman.notepad2.creator.CreatorDialog;
-import com.matvey.perelman.notepad2.list.ElementType;
-import com.matvey.perelman.notepad2.utils.StringEncoder;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -29,13 +26,12 @@ public class MainActivity extends AppCompatActivity {
     public ConstraintLayout root_layout;
     private Adapter adapter;
     private Menu menu;
-    public TextInputEditText text_search;
     public CreatorDialog creator_dialog;
     public int to_update_index;
 
     private String path_to_cut;
-    private boolean to_cut_file;
 
+    private boolean isStopped;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,19 +44,13 @@ public class MainActivity extends AppCompatActivity {
         RecyclerView rv = findViewById(R.id.list_view);
         rv.setLayoutManager(new LinearLayoutManager(this));
         rv.setAdapter(adapter);
-        //search edit text
-        text_search = findViewById(R.id.search_input_et);
-        text_search.setOnEditorActionListener((v, actionId, event) -> {
-            adapter.cursor.searchParamChanged((text_search.getText() == null) ? "" : text_search.getText().toString());
-            return true;
-        });
         //creator_dialog
         creator_dialog = new CreatorDialog(this);
         //fab
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener((vie) -> {
-            creator_dialog.element.setType((adapter.cursor.layer() > 0) ? ElementType.TEXT : ElementType.FOLDER);
-            creator_dialog.startCreating((path_to_cut != null) && (adapter.cursor.layer() != 0 || !to_cut_file));
+            if(!isStopped)
+                creator_dialog.startCreating(adapter.cursor.getPathID(),  path_to_cut != null);
         });
         //load state
         loadState();
@@ -72,8 +62,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
         this.menu = menu;
-        menu.getItem(adapter.actionType.ordinal()).setChecked(true);
-        menu.getItem(3).setChecked(adapter.ask_before_delete);
+        menu.getItem(0).setChecked(adapter.ask_before_delete);
         return true;
     }
 
@@ -81,41 +70,33 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         item.setChecked(!item.isChecked());
         if (item == menu.getItem(0)) {
-            adapter.setActionType(ActionType.DISABLED);
-        } else if (item == menu.getItem(1)) {
-            adapter.setActionType(ActionType.DELETE);
-        } else if (item == menu.getItem(2)) {
-            adapter.setActionType(ActionType.SETTINGS);
-        } else if (item == menu.getItem(3)) {
             adapter.ask_before_delete = item.isChecked();
-        } else if(item == menu.getItem(4)){
+        } else if (item == menu.getItem(1)) {
             adapter.goHelp();
         }
         return false;
     }
 
-    public void start_editor(int id, int idx, String name, String content) {
+    public void start_editor(long id, int idx, String name, String content) {
         Intent intent = new Intent(this, EditorActivity.class);
         intent.putExtra("id", id);
         to_update_index = idx;
         intent.putExtra("name", name);
         intent.putExtra("content", content);
-        intent.putExtra("database_name", StringEncoder.encode(adapter.cursor.c.path.get(0)));
         intent.setAction(Intent.ACTION_VIEW);
         startActivity(intent);
     }
     public void create_element(CreatorElement element){
-        adapter.cursor.newElement(element);
+        adapter.connection.newElement(element);
     }
     public void update_element(CreatorElement element) {
-        adapter.cursor.updateElement(element);
+        adapter.connection.updateElement(element);
     }
     public void delete_element(CreatorElement element){
-        adapter.onClickDelete(element.getNameStart(), element.id);
+        adapter.onClickDelete(element.getNameStart(), element.parent, element.id);
     }
     public void cut_element(CreatorElement element){
-        path_to_cut = adapter.path_concat(adapter.cursor.path, element.getNameStart());
-        to_cut_file = element.getType() != ElementType.FOLDER;
+        path_to_cut = adapter.path_concat(adapter.cursor.path_t, element.getNameStart());
     }
     public void paste_element(){
         if(adapter.moveHere(path_to_cut))
@@ -123,7 +104,6 @@ public class MainActivity extends AppCompatActivity {
     }
     public void loadState() {
         SharedPreferences sp = getSharedPreferences("saved_state", Context.MODE_PRIVATE);
-        adapter.actionType = ActionType.values()[sp.getInt("action_type", 0)];
         adapter.ask_before_delete = sp.getBoolean("ask_before_delete", true);
     }
 
@@ -135,7 +115,6 @@ public class MainActivity extends AppCompatActivity {
 
     public void saveState() {
         SharedPreferences.Editor editor = getSharedPreferences("saved_state", Context.MODE_PRIVATE).edit();
-        editor.putInt("action_type", adapter.actionType.ordinal());
         editor.putBoolean("ask_before_delete", adapter.ask_before_delete);
         editor.apply();
     }
@@ -145,10 +124,17 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
+        isStopped = false;
         if (to_update_index != -1) {
             adapter.cursor.reloadData();
             adapter.notifyItemChanged(to_update_index);
         }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        isStopped = true;
     }
 
     @Override
@@ -159,9 +145,9 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
+        creator_dialog.hide();
         saveState();
         adapter.onClose();
-        creator_dialog.hide();
+        super.onDestroy();
     }
 }
