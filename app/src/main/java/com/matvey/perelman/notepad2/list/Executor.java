@@ -146,7 +146,7 @@ public class Executor implements AutoCloseable {
                 long new_path = conn.getID(curr_path, arr.get(i));
                 if(new_path == -1){
                     if(make_dir)
-                        defnewDir(arr.get(i));
+                        curr_path = defnewDir(arr.get(i));
                     else
                         throw new RuntimeException(PythonAPI.activity.getString(R.string.error_bad_path));
                 }else if(conn.getType(new_path) != ElementType.FOLDER)
