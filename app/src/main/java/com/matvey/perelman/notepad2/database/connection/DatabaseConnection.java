@@ -57,7 +57,7 @@ public class DatabaseConnection {
     private void onChangeName(long parent, long id){
         onChangeItem(parent, id);
         for(IDListener listener: cursors){
-            if(isParentFor(id, listener.getPathID()))
+            if(isParentFor(parent, listener.getPathID()))
                 listener.onPathRenamed();
         }
     }

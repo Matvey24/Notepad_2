@@ -58,8 +58,8 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
                     main_activity.setTitle(R.string.app_name);
                 else {
                     String s = cursor.path_t;
-                    if(s.length() > 25)
-                        s = s.substring(s.length() - 25);
+                    if(s.length() > 30)
+                        s = s.substring(s.length() - 30);
                     main_activity.setTitle(s);
 
                 }
