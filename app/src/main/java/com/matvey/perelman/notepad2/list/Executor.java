@@ -16,7 +16,7 @@ public class Executor implements AutoCloseable {
     private final CreatorElement celement;
     private final DatabaseElement delement;
     private PyObject pyapi;
-    private DatabaseConnection conn;
+    private final DatabaseConnection conn;
     private long folder_id;
     private long curr_path;
 
@@ -120,6 +120,7 @@ public class Executor implements AutoCloseable {
 
         String last = arr.get(arr.size() - 1);
         if(last.equals("..")){
+            curr_path = conn.getParent(curr_path);
             String name = conn.getName(curr_path);
             curr_path = conn.getParent(curr_path);
             return name;
@@ -277,11 +278,10 @@ public class Executor implements AutoCloseable {
         long id2 = conn.getID(curr_path, name2);
         if (id2 != -1)
             return 2;
-        conn.getElement(id, delement);
-        celement.id = delement.id;
-        celement.parent = delement.parent;
-        celement.setType(delement.type);
-        celement.setName(delement.name);
+        celement.id = id;
+        celement.parent = curr_path;
+        celement.setType(conn.getType(id));
+        celement.setName(name1);
         celement.updateName(name2);
         conn.updateElement(celement);
         return 0;

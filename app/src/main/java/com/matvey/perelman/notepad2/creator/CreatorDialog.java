@@ -63,8 +63,7 @@ public class CreatorDialog extends Dialog {
         });
 
         btn_create.setOnClickListener((view)->{
-            String name = (name_text.getText() == null) ? "" : name_text.getText().toString();
-
+            String name = (name_text.getText() == null) ? "" : name_text.getText().toString().trim();
             if(editing){
                 if(!name.isEmpty()) {
                     element.updateName(name);

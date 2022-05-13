@@ -94,9 +94,8 @@ public class DatabaseConnection {
         save_to.content = list.getString(3);
     }
     public Cursor getListFiles(long folder_id){
-        double_param[0] = String.valueOf(folder_id);
-        double_param[1] = "0";
-        return db.rawQuery("SELECT ID, name, type, substr(content, 0, 50) FROM main WHERE parent == ? AND ID != ? ORDER BY name", double_param);
+        single_param[0] = String.valueOf(folder_id);
+        return db.rawQuery("SELECT ID, name, type, substr(content, 0, 50) FROM main WHERE parent == ? AND ID != 0 ORDER BY name", single_param);
     }
     public long getID(long parent, String item){
         double_param[0] = String.valueOf(parent);

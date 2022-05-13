@@ -20,6 +20,7 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
+            android:gravity="end"
             app:popupTheme="@style/Theme.Notepad2.PopupOverlay"
             app:subtitleTextColor="@color/text_primary"
             app:titleTextColor="@color/text_primary" />

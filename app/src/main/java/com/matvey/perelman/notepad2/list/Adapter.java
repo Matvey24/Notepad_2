@@ -56,8 +56,13 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
             public void onPathRenamed() {
                 if (cursor.getPathID() == 0)
                     main_activity.setTitle(R.string.app_name);
-                else
-                    main_activity.setTitle(cursor.path_t);
+                else {
+                    String s = cursor.path_t;
+                    if(s.length() > 25)
+                        s = s.substring(s.length() - 25);
+                    main_activity.setTitle(s);
+
+                }
             }
 
             @Override
@@ -69,7 +74,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
         }, main_activity);
 
         this.main_activity = main_activity;
-        tasks = new Tasks();
+        tasks = new Tasks(Runtime.getRuntime().availableProcessors());
         executor = new Executor(connection);
         tasks.runTask(() -> {
             if (!Python.isStarted())
