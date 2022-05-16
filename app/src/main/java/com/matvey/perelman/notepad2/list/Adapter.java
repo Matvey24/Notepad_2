@@ -59,7 +59,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
                 else {
                     String s = cursor.path_t;
                     if(s.length() > 30)
-                        s = s.substring(s.length() - 30);
+                        s = ".." + s.substring(s.length() - 30);
                     main_activity.setTitle(s);
 
                 }
@@ -79,7 +79,6 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
         tasks.runTask(() -> {
             if (!Python.isStarted())
                 Python.start(new AndroidPlatform(main_activity));
-
             PythonAPI.activity = main_activity;
             PythonAPI.executor = executor;
             Python p = Python.getInstance();
@@ -130,17 +129,34 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
         } else if (element.type == ElementType.TEXT) {
             String content = connection.getContent(element.id);
             main_activity.start_editor(element.id, position, element.name, content);
-        } else if (element.type == ElementType.EXECUTABLE) {
+        } else if (element.type == ElementType.SCRIPT) {
             runFile(element.parent, element.id);
         }
     }
 
     public void goHelp() {
         tasks.runTask(()-> {
-            String json = main_activity.getString(R.string.help_text);
-            executor.makeDatabase(json);
             long id = connection.getID(0, "Help");
-            main_activity.runOnUiThread(()->cursor.enterUI(id));
+            if(id == -1) {
+                String json = main_activity.getString(R.string.help_text);
+                executor.makeDatabase(json);
+            }
+            ElementType type = connection.getType(id);
+            if(type == ElementType.SCRIPT){
+                runFile(0, id);
+                return;
+            } else if(connection.getType(id) == ElementType.TEXT){
+                long ui_id = id;
+                main_activity.runOnUiThread(()->{
+                    cursor.enterUI(0);
+                    main_activity.start_editor(ui_id, cursor.indexOf(ui_id), connection.getName(ui_id), connection.getContent(ui_id));
+                });
+                return;
+            }
+
+            id = connection.getID(0, "Help");
+            long ui_pos = id;
+            main_activity.runOnUiThread(()->cursor.enterUI(ui_pos));
         });
     }
 

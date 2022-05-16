@@ -25,6 +25,9 @@ def __java_api_run(string: str):
 def __java_api_from_json(path: str, st: str):
     api_files.from_json(path, st, False)
 
+def input(str = ''):
+    pass
+
 #default lib
 class api_files:
     def to_py(path: str):
@@ -45,8 +48,8 @@ class api_files:
         f_path = api.path_concat(path, d['n'])
         if d['t'] != ElementType.FOLDER.ordinal():
             api.write(f_path, d['c'])
-            if d['t'] == ElementType.EXECUTABLE.ordinal():
-                api.executable(f_path, True)
+            if d['t'] == ElementType.SCRIPT.ordinal():
+                api.script(f_path, True)
             return
 
         api.mkdir(f_path)

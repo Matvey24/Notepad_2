@@ -28,9 +28,9 @@ public class PythonAPI {
         String file = executor.cdGoEntry(executor.parsePath(fpath), true);
         executor.write(file, content);
     }
-    public static void executable(String fpath, boolean mode){
+    public static void script(String fpath, boolean mode){
         String file = executor.cdGoEntry(executor.parsePath(fpath), true);
-        executor.executable(file, mode);
+        executor.script(file, mode);
     }
     public static void mkdir(String dpath){
         String dir = executor.cdGoEntry(executor.parsePath(dpath), true);
@@ -65,8 +65,8 @@ public class PythonAPI {
     public static boolean is_folder(String path){
         return get_type(path) == ElementType.FOLDER;
     }
-    public static boolean is_executable(String path){
-        return get_type(path) == ElementType.EXECUTABLE;
+    public static boolean is_script(String path){
+        return get_type(path) == ElementType.SCRIPT;
     }
     public static ElementType get_type(String path){
         String entry = executor.cdGoEntry(executor.parsePath(path), false);

@@ -29,6 +29,10 @@ public class MyViewHolder extends RecyclerView.ViewHolder {
             if(!error_message)
                 adapter.onClickField(element, getAdapterPosition());
         });
+        itemView.setOnLongClickListener((view)->{
+            adapter.onClickSettings(element);
+            return true;
+        });
     }
     public void setValues(){
         action_btn.setVisibility(View.VISIBLE);
@@ -41,7 +45,7 @@ public class MyViewHolder extends RecyclerView.ViewHolder {
             case TEXT:
                 type_image.setImageResource(R.drawable.text_image);
                 break;
-            case EXECUTABLE:
+            case SCRIPT:
                 type_image.setImageResource(R.drawable.executable_image);
                 break;
         }

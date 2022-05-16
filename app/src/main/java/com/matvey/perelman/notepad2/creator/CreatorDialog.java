@@ -13,7 +13,7 @@ import com.matvey.perelman.notepad2.MainActivity;
 import com.matvey.perelman.notepad2.R;
 import com.matvey.perelman.notepad2.list.ElementType;
 
-import static com.matvey.perelman.notepad2.list.ElementType.EXECUTABLE;
+import static com.matvey.perelman.notepad2.list.ElementType.SCRIPT;
 import static com.matvey.perelman.notepad2.list.ElementType.FOLDER;
 import static com.matvey.perelman.notepad2.list.ElementType.TEXT;
 
@@ -58,7 +58,7 @@ public class CreatorDialog extends Dialog {
         btn_executable.setOnCheckedChangeListener((buttonView, isChecked)->{
             if(isChecked){
                 layout.setHint(R.string.new_executable_text);
-                element.updateType(EXECUTABLE);
+                element.updateType(SCRIPT);
             }
         });
 
@@ -78,7 +78,7 @@ public class CreatorDialog extends Dialog {
                         case FOLDER:
                             name = context.getString(R.string.new_folder_text);
                             break;
-                        case EXECUTABLE:
+                        case SCRIPT:
                             name = context.getString(R.string.new_executable_text);
                             break;
                     }
@@ -138,7 +138,7 @@ public class CreatorDialog extends Dialog {
             case FOLDER:
                 btn_folder.setChecked(true);
                 break;
-            case EXECUTABLE:
+            case SCRIPT:
                 btn_executable.setChecked(true);
                 break;
         }

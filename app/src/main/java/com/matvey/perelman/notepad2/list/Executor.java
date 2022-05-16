@@ -110,9 +110,9 @@ public class Executor implements AutoCloseable {
                     if(make_dir)
                         curr_path = defnewDir(arr.get(i));
                     else
-                        throw new RuntimeException(PythonAPI.activity.getString(R.string.error_bad_path));
+                        throw new RuntimeException(getString(R.string.error_bad_path));
                 }else if(conn.getType(new_path) != ElementType.FOLDER)
-                    throw new RuntimeException(String.format(PythonAPI.activity.getString(R.string.error_file2folder), arr.get(i)));
+                    throw new RuntimeException(PythonAPI.activity.getString(R.string.error_file2folder, arr.get(i)));
                 else
                     curr_path = new_path;
             }
@@ -151,7 +151,7 @@ public class Executor implements AutoCloseable {
                     else
                         throw new RuntimeException(PythonAPI.activity.getString(R.string.error_bad_path));
                 }else if(conn.getType(new_path) != ElementType.FOLDER)
-                    throw new RuntimeException(String.format(PythonAPI.activity.getString(R.string.error_file2folder), arr.get(i)));
+                    throw new RuntimeException(PythonAPI.activity.getString(R.string.error_file2folder, arr.get(i)));
                 else
                     curr_path = new_path;
             }
@@ -160,7 +160,7 @@ public class Executor implements AutoCloseable {
 
     private long defnewFile(String file, boolean exec) {
         celement.setName(file);
-        celement.setType(exec ? ElementType.EXECUTABLE : ElementType.TEXT);
+        celement.setType(exec ? ElementType.SCRIPT : ElementType.TEXT);
         celement.parent = curr_path;
         return conn.newElement(celement);
     }
@@ -183,7 +183,7 @@ public class Executor implements AutoCloseable {
         if (id == -1)
             defnewDir(dir);
         else if (conn.getType(id) != ElementType.FOLDER)
-            throw new RuntimeException(String.format(PythonAPI.activity.getString(R.string.error_file2folder), dir));
+            throw new RuntimeException(PythonAPI.activity.getString(R.string.error_file2folder, dir));
     }
 
     public boolean delete(String entry) {
@@ -212,23 +212,23 @@ public class Executor implements AutoCloseable {
     public String read(String file) {
         long id = conn.getID(curr_path, file);
         if (id == -1 || conn.getType(id) == ElementType.FOLDER)
-            throw new RuntimeException(String.format(PythonAPI.activity.getString(R.string.error_read_existence), file));
+            throw new RuntimeException(PythonAPI.activity.getString(R.string.error_read_existence, file));
         return conn.getContent(id);
     }
 
-    public void executable(String file, boolean mode) {
+    public void script(String file, boolean mode) {
         long id = conn.getID(curr_path, file);
         if (id == -1) {
             defnewFile(file, mode);
         } else if (conn.getType(id) == ElementType.FOLDER) {
-            throw new RuntimeException(String.format("Could not make folder %s executable", file));
+            throw new RuntimeException(PythonAPI.activity.getString(R.string.error_folder_to_script, file));
         } else {
             conn.getElement(id, delement);
             celement.id = delement.id;
             celement.parent = delement.parent;
             celement.setName(file);
             celement.setType(delement.type);
-            celement.updateType(mode ? ElementType.EXECUTABLE : ElementType.TEXT);
+            celement.updateType(mode ? ElementType.SCRIPT : ElementType.TEXT);
 
             conn.updateElement(celement);
         }
@@ -309,7 +309,7 @@ public class Executor implements AutoCloseable {
         long to_dir = curr_path;
 
         if (conn.isParentFor(from_id, to_dir))//перемещение внутрь себя
-            throw new RuntimeException(String.format(getString(R.string.error_move_dest), entry_cut, path_paste));
+            throw new RuntimeException(PythonAPI.activity.getString(R.string.error_move_dest, entry_cut, path_paste));
 
         if (from_dir == to_dir)//пункт назначения == пункту отправления
             return;
