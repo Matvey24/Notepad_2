@@ -16,6 +16,8 @@ import com.matvey.perelman.notepad2.database.DatabaseElement;
 import com.matvey.perelman.notepad2.creator.CreatorDialog;
 import com.matvey.perelman.notepad2.database.connection.DatabaseCursor;
 import com.matvey.perelman.notepad2.database.connection.ViewListener;
+import com.matvey.perelman.notepad2.executor.Executor;
+import com.matvey.perelman.notepad2.executor.PythonAPI;
 import com.matvey.perelman.notepad2.utils.threads.Tasks;
 
 public class Adapter extends RecyclerView.Adapter<MyViewHolder> {

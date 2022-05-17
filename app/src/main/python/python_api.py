@@ -1,4 +1,4 @@
-from com.matvey.perelman.notepad2.list import PythonAPI as api
+from com.matvey.perelman.notepad2.executor import PythonAPI as api
 from com.matvey.perelman.notepad2.list import ElementType
 
 import sys
@@ -25,8 +25,8 @@ def __java_api_run(string: str):
 def __java_api_from_json(path: str, st: str):
     api_files.from_json(path, st, False)
 
-def input(str = ''):
-    pass
+def input(str = 'input'):
+    return api.input(str)
 
 #default lib
 class api_files:

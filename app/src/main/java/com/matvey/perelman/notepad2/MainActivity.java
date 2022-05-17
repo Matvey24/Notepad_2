@@ -6,32 +6,42 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.textfield.TextInputEditText;
 import com.matvey.perelman.notepad2.creator.CreatorElement;
+import com.matvey.perelman.notepad2.executor.InputDialog;
 import com.matvey.perelman.notepad2.list.Adapter;
 import com.matvey.perelman.notepad2.creator.CreatorDialog;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
+
+import java.util.concurrent.CyclicBarrier;
 
 public class MainActivity extends AppCompatActivity {
     public ConstraintLayout root_layout;
     private Adapter adapter;
     private Menu menu;
     public CreatorDialog creator_dialog;
+
     public int to_update_index;
 
     private String path_to_cut;
 
     private boolean isStopped;
+
+    private InputDialog input_dialog = null;
+    private CyclicBarrier barrier = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -45,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
         rv.setLayoutManager(new LinearLayoutManager(this));
         rv.setAdapter(adapter);
         //creator_dialog
-        creator_dialog = new CreatorDialog(this);
+        creator_dialog = CreatorDialog.createInstance(this);
         //fab
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener((vie) -> {
@@ -131,6 +141,26 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public synchronized String showInputDialog(String input_name){
+        if(barrier == null)
+            barrier = new CyclicBarrier(2);
+        runOnUiThread(()->{
+            if(input_dialog == null)
+                input_dialog = InputDialog.createInstance(this);
+            input_dialog.start(input_name);
+        });
+        th_barrier_await();
+        return input_dialog.getString();
+    }
+    public void ui_barrier_wait(){
+        if(barrier.getNumberWaiting() == 1)
+            th_barrier_await();
+    }
+    public void th_barrier_await(){
+        try{
+            barrier.await();
+        }catch (Exception ignored) {}
+    }
     @Override
     protected void onStop() {
         super.onStop();
@@ -145,7 +175,10 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onDestroy() {
-        creator_dialog.hide();
+        creator_dialog.onDestroy();
+        if(input_dialog != null) {
+            input_dialog.onDestroy();
+        }
         saveState();
         adapter.onClose();
         super.onDestroy();
