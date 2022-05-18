@@ -42,9 +42,10 @@ public class PythonAPI {
         String entry = executor.cdGoEntry(executor.parsePath(epath), false);
         return executor.delete(entry);
     }
-    public static String get_path(){
+    public static String path(){
         return executor.getPath();
     }
+    public static String script_name(){return executor.getScriptName();}
     public static String get_name(String path){
         return executor.getName(path);
     }

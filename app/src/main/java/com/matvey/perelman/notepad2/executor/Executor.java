@@ -22,6 +22,7 @@ public class Executor implements AutoCloseable {
     private final DatabaseConnection conn;
     private long folder_id;
     private long curr_path;
+    private long script_id;
 
     public Executor(DatabaseConnection connection) {
         this.conn = connection;
@@ -35,6 +36,7 @@ public class Executor implements AutoCloseable {
 
     public void begin(long id, long parent) {
         String content = conn.getContent(id);
+        script_id = id;
         folder_id = parent;
         try {
             pyapi.callAttrThrows("__java_api_run", content);
@@ -49,9 +51,11 @@ public class Executor implements AutoCloseable {
     }
 
     public String getPath() {
-        return conn.buildPath(folder_id);
+        return conn.buildPath(script_id);
     }
-
+    public String getScriptName(){
+        return conn.getName(script_id);
+    }
     public ArrayList<String> parsePath(String path) {
         if (path.trim().equals("/")) {
             ArrayList<String> list = new ArrayList<>();

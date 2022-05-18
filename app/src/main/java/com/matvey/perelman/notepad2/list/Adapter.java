@@ -100,9 +100,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
     }
 
     public void onClickSettings(DatabaseElement element) {
-        CreatorDialog d = main_activity.creator_dialog;
-        d.element.set(element);
-        d.startEditing();
+        main_activity.creator_dialog.startEditing(element);
     }
 
     public boolean moveHere(String entry_path) {

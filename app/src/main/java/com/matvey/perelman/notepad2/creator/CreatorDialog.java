@@ -1,7 +1,6 @@
 package com.matvey.perelman.notepad2.creator;
 
 import android.os.Bundle;
-import android.os.strictmode.ServiceConnectionLeakedViolation;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +17,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.matvey.perelman.notepad2.MainActivity;
 import com.matvey.perelman.notepad2.R;
+import com.matvey.perelman.notepad2.database.DatabaseElement;
 import com.matvey.perelman.notepad2.list.ElementType;
 
 import static com.matvey.perelman.notepad2.list.ElementType.SCRIPT;
@@ -154,12 +154,13 @@ public class CreatorDialog extends DialogFragment {
         this.paste_available = paste_available;
         show(activity.getSupportFragmentManager(), "creator");
     }
-    public void startEditing(){
+    public void startEditing(DatabaseElement element){
+        this.element.set(element);
         editing = true;
         show(activity.getSupportFragmentManager(), "creator");
     }
     private void setChecked(){
-        ElementType type = element.getType();
+        ElementType type = element.getTypeStart();
         switch (type){
             case TEXT:
                 btn_file.setChecked(true);

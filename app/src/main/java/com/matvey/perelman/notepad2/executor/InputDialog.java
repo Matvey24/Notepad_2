@@ -51,6 +51,8 @@ public class InputDialog extends DialogFragment {
     public void onStop() {
         super.onStop();
         activity.ui_barrier_wait();
+        if(!isHidden())
+            dismiss();
     }
 
     public void start(String input_name) {

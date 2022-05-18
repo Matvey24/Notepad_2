@@ -30,6 +30,9 @@ public class CreatorElement {
     public ElementType getType(){
         return type_end;
     }
+    public ElementType getTypeStart(){
+        return type_start;
+    }
     public String getName(){
         return name_end;
     }
