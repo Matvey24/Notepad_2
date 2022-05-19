@@ -2,6 +2,7 @@ from com.matvey.perelman.notepad2.executor import PythonAPI as api
 from com.matvey.perelman.notepad2.list import ElementType
 
 import sys
+import traceback
 from io import StringIO
 
 import json
@@ -11,7 +12,12 @@ def __java_api_run(string: str):
     saved_stderr = StringIO()
     sys.stdout = saved_stdout
     sys.stderr = saved_stderr
-    exec(string, globals(), globals())
+    try:
+        exec(string, globals(), globals())
+    except Exception as ex:
+        api.toast_l(str(ex))
+        traceback.print_exc()
+
     out = saved_stdout.getvalue()
     err = saved_stderr.getvalue()
     if len(out) != 0:

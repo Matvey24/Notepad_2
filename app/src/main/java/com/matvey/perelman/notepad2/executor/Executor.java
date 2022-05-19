@@ -38,12 +38,7 @@ public class Executor implements AutoCloseable {
         String content = conn.getContent(id);
         script_id = id;
         folder_id = parent;
-        try {
-            pyapi.callAttrThrows("__java_api_run", content);
-        } catch (Throwable t) {
-            t.printStackTrace();
-            PythonAPI.toast_l(t.getMessage());
-        }
+        pyapi.callAttr("__java_api_run", content);
     }
 
     public void makeDatabase(String json) {
