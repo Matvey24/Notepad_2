@@ -10,12 +10,14 @@ import com.matvey.perelman.notepad2.R;
 import com.matvey.perelman.notepad2.creator.CreatorElement;
 import com.matvey.perelman.notepad2.database.DatabaseElement;
 import com.matvey.perelman.notepad2.database.connection.DatabaseConnection;
+import com.matvey.perelman.notepad2.list.Adapter;
 import com.matvey.perelman.notepad2.list.ElementType;
 
 import java.util.ArrayList;
 import java.util.concurrent.CyclicBarrier;
 
 public class Executor implements AutoCloseable {
+    private final Adapter adapter;
     private final CreatorElement celement;
     private final DatabaseElement delement;
     private PyObject pyapi;
@@ -24,8 +26,9 @@ public class Executor implements AutoCloseable {
     private long curr_path;
     private long script_id;
 
-    public Executor(DatabaseConnection connection) {
+    public Executor(DatabaseConnection connection, Adapter adapter) {
         this.conn = connection;
+        this.adapter = adapter;
         celement = new CreatorElement();
         delement = new DatabaseElement();
     }
@@ -297,6 +300,10 @@ public class Executor implements AutoCloseable {
             return p.get(p.size() - 1);
     }
 
+    public void run(String path){
+        long id = conn.getID(curr_path, path);
+        adapter.runFile(curr_path, id);
+    }
     public void move(String entry_cut, String path_paste) {
         ArrayList<String> path_from = parsePath(entry_cut);
         String name = cdGoEntry(path_from, false);
@@ -324,7 +331,6 @@ public class Executor implements AutoCloseable {
     public String getString(@StringRes int id){
         return PythonAPI.activity.getString(id);
     }
-
     @Override
     public void close() {
         conn.close();

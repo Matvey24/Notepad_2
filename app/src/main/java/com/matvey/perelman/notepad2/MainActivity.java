@@ -62,6 +62,10 @@ public class MainActivity extends AppCompatActivity {
             if(!isStopped)
                 creator_dialog.startCreating(adapter.cursor.getPathID(),  path_to_cut != null);
         });
+        fab.setOnLongClickListener(v -> {
+            adapter.quick_new_note();
+            return true;
+        });
         //load state
         loadState();
         to_update_index = -1;

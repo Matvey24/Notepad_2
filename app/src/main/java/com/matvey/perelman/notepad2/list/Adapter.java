@@ -11,6 +11,7 @@ import com.chaquo.python.android.AndroidPlatform;
 import com.google.android.material.snackbar.Snackbar;
 import com.matvey.perelman.notepad2.MainActivity;
 import com.matvey.perelman.notepad2.R;
+import com.matvey.perelman.notepad2.creator.CreatorElement;
 import com.matvey.perelman.notepad2.database.connection.DatabaseConnection;
 import com.matvey.perelman.notepad2.database.DatabaseElement;
 import com.matvey.perelman.notepad2.creator.CreatorDialog;
@@ -76,8 +77,8 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
         }, main_activity);
 
         this.main_activity = main_activity;
-        tasks = new Tasks(Runtime.getRuntime().availableProcessors());
-        executor = new Executor(connection);
+        tasks = new Tasks();
+        executor = new Executor(connection, this);
         tasks.runTask(() -> {
             if (!Python.isStarted())
                 Python.start(new AndroidPlatform(main_activity));
@@ -121,6 +122,15 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
         tasks.runTask(() -> {
             executor.begin(id, parent);
         });
+    }
+
+    public void quick_new_note(){
+        CreatorElement celement = new CreatorElement();
+        celement.setType(ElementType.TEXT);
+        celement.setName(main_activity.getString(R.string.new_file_text));
+        celement.parent = cursor.getPathID();
+        long id = connection.newElement(celement);
+        main_activity.start_editor(id, cursor.indexOf(id), connection.getName(id), connection.getContent(id));
     }
 
     public void onClickField(DatabaseElement element, int position) {

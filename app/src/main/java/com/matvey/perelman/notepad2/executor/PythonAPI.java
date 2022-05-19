@@ -85,4 +85,8 @@ public class PythonAPI {
     public static String input(String input_name){
         return activity.showInputDialog(input_name);
     }
+//    public static void run(String e_path){
+//        String file = executor.cdGoEntry(executor.parsePath(e_path), false);
+//        executor.run(file);
+//    }
 }
