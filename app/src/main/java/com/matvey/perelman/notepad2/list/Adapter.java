@@ -30,6 +30,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
     private final Stack<Executor> executors;
 
     private final Tasks tasks;
+    public String path_to_cut;
 
     public Adapter(MainActivity main_activity) {
         connection = new DatabaseConnection(main_activity);
@@ -50,9 +51,9 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
 
             @Override
             public void onChangeItem(int idx_start, int idx_end) {
-                    if (idx_start != idx_end)
-                        notifyItemMoved(idx_start, idx_end);
-                    notifyItemChanged(idx_end);
+                if (idx_start != idx_end)
+                    notifyItemMoved(idx_start, idx_end);
+                notifyItemChanged(idx_end);
             }
 
             @Override
@@ -61,7 +62,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
                     main_activity.setTitle(R.string.app_name);
                 else {
                     String s = cursor.path_t;
-                    if(s.length() > 30)
+                    if (s.length() > 30)
                         s = ".." + s.substring(s.length() - 30);
                     main_activity.setTitle(s);
 
@@ -88,34 +89,35 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
     public void onClickDelete(String name, long parent, long id) {
         if (ask_before_delete) {
             Snackbar.make(main_activity.root_layout,
-                    String.format(main_activity.getString(R.string.ask_delete), name),
+                    main_activity.getString(R.string.ask_delete, name),
                     Snackbar.LENGTH_SHORT)
-                    .setAction(R.string.action_delete, (view) -> tasks.runTask(()->connection.deleteElement(parent, id)))
+                    .setAction(R.string.action_delete, (view) -> connection.deleteElement(parent, id))
                     .show();
         } else
-            tasks.runTask(()->connection.deleteElement(parent, id));
+            tasks.runTask(() -> connection.deleteElement(parent, id));
     }
 
     public void onClickSettings(DatabaseElement element) {
         main_activity.creator_dialog.startEditing(element);
     }
-
-    public boolean moveHere(String entry_path) {
-        try {
-            Executor e = allocExecutor();
-            e.move(entry_path, cursor.path_t);
-            freeExecutor(e);
-            return true;
-        } catch (RuntimeException e) {
-            main_activity.makeToast(e.getMessage(), true);
-            return false;
-        }
+    public void cut_element(CreatorElement element){
+        path_to_cut = path_concat(cursor.path_t, element.getNameStart());
     }
-
+    public void moveHere() {
+        Executor e = allocExecutor();
+        try {
+            e.move(path_to_cut, cursor.path_t);
+            path_to_cut = null;
+        }catch (RuntimeException ex){
+            main_activity.makeToast(ex.toString(), true);
+        }
+        freeExecutor(e);
+    }
     public boolean back() {
         return cursor.backUI();
     }
-    private Executor allocExecutor(){
+
+    private Executor allocExecutor() {
         synchronized (executors) {
             if (executors.isEmpty())
                 return new Executor(connection, main_activity, Python.getInstance().getModule("python_api"));
@@ -123,11 +125,13 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
                 return executors.pop();
         }
     }
-    private void freeExecutor(Executor ex){
-        synchronized (executors){
+
+    private void freeExecutor(Executor ex) {
+        synchronized (executors) {
             executors.push(ex);
         }
     }
+
     public void runFile(long parent, long id) {
         tasks.runTask(() -> {
             Executor e = allocExecutor();
@@ -136,7 +140,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
         });
     }
 
-    public void quick_new_note(){
+    public void quick_new_note() {
         CreatorElement celement = new CreatorElement();
         celement.setType(ElementType.TEXT);
         celement.setName(main_activity.getString(R.string.new_file_text));
@@ -157,21 +161,21 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
     }
 
     public void goHelp() {
-        tasks.runTask(()-> {
+        tasks.runTask(() -> {
             long id = connection.getID(0, "Help");
-            if(id == -1) {
+            if (id == -1) {
                 String json = main_activity.getString(R.string.help_text);
                 Executor e = allocExecutor();
                 e.makeDatabase(json);
                 freeExecutor(e);
             }
             ElementType type = connection.getType(id);
-            if(type == ElementType.SCRIPT){
+            if (type == ElementType.SCRIPT) {
                 runFile(0, id);
                 return;
-            } else if(connection.getType(id) == ElementType.TEXT){
+            } else if (connection.getType(id) == ElementType.TEXT) {
                 long ui_id = id;
-                main_activity.runOnUiThread(()->{
+                main_activity.runOnUiThread(() -> {
                     cursor.enterUI(0);
                     main_activity.start_editor(ui_id, cursor.indexOf(ui_id), connection.getName(ui_id), connection.getContent(ui_id));
                 });
@@ -180,7 +184,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
 
             id = connection.getID(0, "Help");
             long ui_pos = id;
-            main_activity.runOnUiThread(()->cursor.enterUI(ui_pos));
+            main_activity.runOnUiThread(() -> cursor.enterUI(ui_pos));
         });
     }
 

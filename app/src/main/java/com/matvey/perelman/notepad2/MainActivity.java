@@ -26,13 +26,11 @@ import java.util.concurrent.CyclicBarrier;
 
 public class MainActivity extends AppCompatActivity {
     public ConstraintLayout root_layout;
-    private Adapter adapter;
+    public Adapter adapter;
     private Menu menu;
     public CreatorDialog creator_dialog;
 
     public int to_update_index;
-
-    private String path_to_cut;
 
     private boolean isStopped;
 
@@ -57,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener((vie) -> {
             if(!isStopped)
-                creator_dialog.startCreating(adapter.cursor.getPathID(),  path_to_cut != null);
+                creator_dialog.startCreating(adapter.cursor.getPathID(),  adapter.path_to_cut != null);
         });
         fab.setOnLongClickListener(v -> {
             adapter.quick_new_note();
@@ -66,7 +64,6 @@ public class MainActivity extends AppCompatActivity {
         //load state
         loadState();
         to_update_index = -1;
-        path_to_cut = null;
     }
 
     @Override
@@ -107,11 +104,10 @@ public class MainActivity extends AppCompatActivity {
         adapter.onClickDelete(element.getNameStart(), element.parent, element.id);
     }
     public void cut_element(CreatorElement element){
-        path_to_cut = adapter.path_concat(adapter.cursor.path_t, element.getNameStart());
+        adapter.cut_element(element);
     }
     public void paste_element(){
-        if(adapter.moveHere(path_to_cut))
-            path_to_cut = null;
+        adapter.moveHere();
     }
     public void loadState() {
         SharedPreferences sp = getSharedPreferences("saved_state", Context.MODE_PRIVATE);

@@ -92,7 +92,7 @@ public class Executor implements AutoCloseable {
     }
 
     //get name of entry, go to folder, that contains this entry
-    public String cdGoEntry(ArrayList<String> arr, boolean make_dir) {
+    public String cdGoEntry(String path, ArrayList<String> arr, boolean make_dir) {
         if(arr.size() == 0){
             curr_path = conn.getParent(folder_id);
             return conn.getName(folder_id);
@@ -115,7 +115,7 @@ public class Executor implements AutoCloseable {
                     if(make_dir)
                         curr_path = defnewDir(arr.get(i));
                     else
-                        throw new RuntimeException(getString(R.string.error_bad_path));
+                        throw new RuntimeException(getString(R.string.error_bad_path, path));
                 }else if(conn.getType(new_path) != ElementType.FOLDER)
                     throw new RuntimeException(activity.getString(R.string.error_file2folder, arr.get(i)));
                 else
@@ -133,7 +133,7 @@ public class Executor implements AutoCloseable {
         return last;
     }
     //go to the folder
-    public void cdGo(ArrayList<String> arr, boolean make_dir){
+    public void cdGo(String path, ArrayList<String> arr, boolean make_dir){
         if(arr.size() == 0){
             curr_path = folder_id;
             return;
@@ -154,7 +154,7 @@ public class Executor implements AutoCloseable {
                     if(make_dir)
                         curr_path = defnewDir(arr.get(i));
                     else
-                        throw new RuntimeException(activity.getString(R.string.error_bad_path));
+                        throw new RuntimeException(getString(R.string.error_bad_path, path));
                 }else if(conn.getType(new_path) != ElementType.FOLDER)
                     throw new RuntimeException(activity.getString(R.string.error_file2folder, arr.get(i)));
                 else
@@ -295,22 +295,22 @@ public class Executor implements AutoCloseable {
     public String getName(String path) {
         ArrayList<String> p = parsePath(path);
         if (p.get(p.size() - 1).equals("..")) {
-            return cdGoEntry(p, false);
+            return cdGoEntry(path, p, false);
         } else
             return p.get(p.size() - 1);
     }
 
     public void move(String entry_cut, String path_paste) {
         ArrayList<String> path_from = parsePath(entry_cut);
-        String name = cdGoEntry(path_from, false);
+        String name = cdGoEntry(entry_cut, path_from, false);
 
         long from_dir = curr_path;
         long from_id = conn.getID(curr_path, name);
         if(from_id < 1)//ничего не найдено по данному пути
-            throw new RuntimeException(getString(R.string.error_bad_path));
+            throw new RuntimeException(getString(R.string.error_bad_path, entry_cut));
 
         ArrayList<String> path_to = parsePath(path_paste);
-        cdGo(path_to, true);
+        cdGo(path_paste, path_to, true);
         long to_dir = curr_path;
 
         if (conn.isParentFor(from_id, to_dir))//перемещение внутрь себя
@@ -321,11 +321,19 @@ public class Executor implements AutoCloseable {
 
         long err_id = conn.getID(to_dir, name);
         if(err_id != -1)
-            conn.deleteElement(to_dir, err_id);
+            throw new RuntimeException(getString(R.string.error_rename_exists, path_paste));
         conn.updateParent(from_id, from_dir, to_dir);
     }
-    public String getString(@StringRes int id){
-        return activity.getString(id);
+    public void run(String path){
+        String entry = cdGoEntry(path, parsePath(path), false);
+        long id = conn.getID(curr_path, entry);
+        if(id != -1 && conn.getType(id) != ElementType.FOLDER)
+            activity.adapter.runFile(curr_path, id);
+        else
+            throw new RuntimeException(getString(R.string.error_run_nofile, path));
+    }
+    public String getString(@StringRes int id, String text){
+        return activity.getString(id, text);
     }
     @Override
     public void close() {

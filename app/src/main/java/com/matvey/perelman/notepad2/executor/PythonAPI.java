@@ -18,28 +18,28 @@ public class PythonAPI {
     public void toast_l(String text){
         activity.makeToast(text, true);
     }
-    public void touch(String tpath){
-        String file = executor.cdGoEntry(executor.parsePath(tpath), true);
-        executor.touch(file);
-    }
     public String read(String fpath){
-        String file = executor.cdGoEntry(executor.parsePath(fpath), false);
+        String file = executor.cdGoEntry(fpath, executor.parsePath(fpath), false);
         return executor.read(file);
     }
     public void write(String fpath, String content){
-        String file = executor.cdGoEntry(executor.parsePath(fpath), true);
+        String file = executor.cdGoEntry(fpath, executor.parsePath(fpath), true);
         executor.write(file, content);
     }
+    public void touch(String tpath){
+        String file = executor.cdGoEntry(tpath, executor.parsePath(tpath), true);
+        executor.touch(file);
+    }
     public void script(String fpath, boolean mode){
-        String file = executor.cdGoEntry(executor.parsePath(fpath), true);
+        String file = executor.cdGoEntry(fpath, executor.parsePath(fpath), true);
         executor.script(file, mode);
     }
     public void mkdir(String dpath){
-        String dir = executor.cdGoEntry(executor.parsePath(dpath), true);
+        String dir = executor.cdGoEntry(dpath, executor.parsePath(dpath), true);
         executor.mkdir(dir);
     }
     public boolean delete(String epath){
-        String entry = executor.cdGoEntry(executor.parsePath(epath), false);
+        String entry = executor.cdGoEntry(epath, executor.parsePath(epath), false);
         return executor.delete(entry);
     }
     public String path(){
@@ -50,7 +50,7 @@ public class PythonAPI {
         return executor.getName(path);
     }
     public void rename(String epath, String name){
-        String entry = executor.cdGoEntry(executor.parsePath(epath), false);
+        String entry = executor.cdGoEntry(epath, executor.parsePath(epath), false);
         switch (executor.rename(entry, name)){
             case 1:
                 throw new RuntimeException(activity.getString(R.string.error_bad_path));
@@ -62,7 +62,7 @@ public class PythonAPI {
         return Executor.path_concat(path1, path2);
     }
     public boolean exists(String path){
-        String entry = executor.cdGoEntry(executor.parsePath(path), false);
+        String entry = executor.cdGoEntry(path, executor.parsePath(path), false);
         return executor.exists(entry);
     }
     public boolean is_folder(String path){
@@ -72,11 +72,11 @@ public class PythonAPI {
         return get_type(path) == ElementType.SCRIPT;
     }
     public ElementType get_type(String path){
-        String entry = executor.cdGoEntry(executor.parsePath(path), false);
+        String entry = executor.cdGoEntry(path, executor.parsePath(path), false);
         return executor.getType(entry);
     }
     public ArrayList<DatabaseElement> list_files(String dpath){
-        executor.cdGo(executor.parsePath(dpath), false);
+        executor.cdGo(dpath, executor.parsePath(dpath), false);
         return executor.listFiles();
     }
     public void move(String entry_cut, String path_paste){
@@ -85,5 +85,7 @@ public class PythonAPI {
     public String input(String input_name){
         return activity.showInputDialog(input_name);
     }
-
+    public void run(String path){
+        executor.run(path);
+    }
 }
