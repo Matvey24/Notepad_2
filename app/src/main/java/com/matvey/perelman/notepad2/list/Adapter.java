@@ -14,12 +14,12 @@ import com.matvey.perelman.notepad2.R;
 import com.matvey.perelman.notepad2.creator.CreatorElement;
 import com.matvey.perelman.notepad2.database.connection.DatabaseConnection;
 import com.matvey.perelman.notepad2.database.DatabaseElement;
-import com.matvey.perelman.notepad2.creator.CreatorDialog;
 import com.matvey.perelman.notepad2.database.connection.DatabaseCursor;
 import com.matvey.perelman.notepad2.database.connection.ViewListener;
 import com.matvey.perelman.notepad2.executor.Executor;
-import com.matvey.perelman.notepad2.executor.PythonAPI;
 import com.matvey.perelman.notepad2.utils.threads.Tasks;
+
+import java.util.Stack;
 
 public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
     public boolean ask_before_delete = true;
@@ -27,7 +27,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
     public final DatabaseCursor cursor;
     private final MainActivity main_activity;
 
-    private final Executor executor;
+    private final Stack<Executor> executors;
 
     private final Tasks tasks;
 
@@ -77,15 +77,11 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
         }, main_activity);
 
         this.main_activity = main_activity;
-        tasks = new Tasks();
-        executor = new Executor(connection, this);
+        tasks = new Tasks(Integer.MAX_VALUE);
+        executors = new Stack<>();
         tasks.runTask(() -> {
             if (!Python.isStarted())
                 Python.start(new AndroidPlatform(main_activity));
-            PythonAPI.activity = main_activity;
-            PythonAPI.executor = executor;
-            Python p = Python.getInstance();
-            executor.setPython(p.getModule("python_api"));
         });
     }
 
@@ -106,7 +102,9 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
 
     public boolean moveHere(String entry_path) {
         try {
-            executor.move(entry_path, cursor.path_t);
+            Executor e = allocExecutor();
+            e.move(entry_path, cursor.path_t);
+            freeExecutor(e);
             return true;
         } catch (RuntimeException e) {
             main_activity.makeToast(e.getMessage(), true);
@@ -117,10 +115,24 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
     public boolean back() {
         return cursor.backUI();
     }
-
+    private Executor allocExecutor(){
+        synchronized (executors) {
+            if (executors.isEmpty())
+                return new Executor(connection, main_activity, Python.getInstance().getModule("python_api"));
+            else
+                return executors.pop();
+        }
+    }
+    private void freeExecutor(Executor ex){
+        synchronized (executors){
+            executors.push(ex);
+        }
+    }
     public void runFile(long parent, long id) {
         tasks.runTask(() -> {
-            executor.begin(id, parent);
+            Executor e = allocExecutor();
+            e.begin(id, parent);
+            freeExecutor(e);
         });
     }
 
@@ -149,7 +161,9 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
             long id = connection.getID(0, "Help");
             if(id == -1) {
                 String json = main_activity.getString(R.string.help_text);
-                executor.makeDatabase(json);
+                Executor e = allocExecutor();
+                e.makeDatabase(json);
+                freeExecutor(e);
             }
             ElementType type = connection.getType(id);
             if(type == ElementType.SCRIPT){
@@ -192,7 +206,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
     }
 
     public String path_concat(String path1, String path2) {
-        return executor.path_concat(path1, path2);
+        return Executor.path_concat(path1, path2);
     }
 
     @Override

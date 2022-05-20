@@ -20,7 +20,7 @@ public class Tasks {
     public Tasks(int threadCount) {
         this.threadCount = threadCount;
         queue = new ConcurrentLinkedQueue<>();
-        workers = new ArrayList<>(threadCount);
+        workers = new ArrayList<>();
         freeWorkers = new Stack<>();
     }
 

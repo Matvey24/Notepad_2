@@ -149,15 +149,19 @@ public class CreatorDialog extends DialogFragment {
     }
 
     public void startCreating(long parent, boolean paste_available){
-        editing = false;
-        this.parent = parent;
-        this.paste_available = paste_available;
-        show(activity.getSupportFragmentManager(), "creator");
+        if(!isAdded()) {
+            editing = false;
+            this.parent = parent;
+            this.paste_available = paste_available;
+            show(activity.getSupportFragmentManager(), "creator");
+        }
     }
     public void startEditing(DatabaseElement element){
-        this.element.set(element);
-        editing = true;
-        show(activity.getSupportFragmentManager(), "creator");
+        if(!isAdded()) {
+            this.element.set(element);
+            editing = true;
+            show(activity.getSupportFragmentManager(), "creator");
+        }
     }
     private void setChecked(){
         ElementType type = element.getTypeStart();

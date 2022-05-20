@@ -1,5 +1,4 @@
-from com.matvey.perelman.notepad2.executor import PythonAPI as api
-from com.matvey.perelman.notepad2.list import ElementType
+from com.matvey.perelman.notepad2.list import ElementType as Type
 
 import sys
 import traceback
@@ -7,65 +6,76 @@ from io import StringIO
 
 import json
 
-def __java_api_run(string: str):
-    saved_stdout = StringIO()
-    saved_stderr = StringIO()
-    sys.stdout = saved_stdout
-    sys.stderr = saved_stderr
-    try:
-        exec(string, globals(), globals())
-    except Exception as ex:
-        api.toast_l(str(ex))
-        traceback.print_exc()
+def __java_api_make_executor(api):
+    return executor(api)
 
-    out = saved_stdout.getvalue()
-    err = saved_stderr.getvalue()
-    if len(out) != 0:
-        api.write('out.txt', out)
-    if len(err) != 0:
-        api.write('err.txt', err)
+class executor:
+    def __init__(self, api):
+        self.api = api
+        self.api_files = api_files(api)
 
-    saved_stdout.close()
-    saved_stderr.close()
+    def run_code(self, code: str):
+        saved_stdout = StringIO()
+        saved_stderr = StringIO()
+        sys.stdout = saved_stdout
+        sys.stderr = saved_stderr
+        glob = {'sys': sys, 'traceback': traceback, 'json':json, 'api': self.api, 'api_files': self.api_files, 'Type': Type, 'input':self.input}
+        try:
+            exec(code, glob, glob)
+        except Exception as ex:
+            self.api.toast_l(repr(ex))
+            traceback.print_exc()
 
-def __java_api_from_json(path: str, st: str):
-    api_files.from_json(path, st, False)
+        out = saved_stdout.getvalue()
+        err = saved_stderr.getvalue()
+        if len(out) != 0:
+            self.api.write('out.txt', out)
+        if len(err) != 0:
+            self.api.write('err.txt', err)
 
-def input(str = 'input'):
-    return api.input(str)
+        saved_stdout.close()
+        saved_stderr.close()
 
-#default lib
+    def from_json(self, path: str, st: str):
+        self.api_files.from_json(path, st)
+
+    def input(self, str = 'input'):
+        return self.api.input(str)
+
 class api_files:
-    def to_py(path: str):
-        if not api.exists(path):
-            return None
-        if not api.is_folder(path):
-            return {'n': api.get_name(path), 't': api.get_type(path).ordinal(), 'c': api.read(path)}
+    def __init__(self, api):
+        self.api = api
 
-        list = api.list_files(path)
+    def to_py(self, path: str):
+        if not self.api.exists(path):
+            return None
+        if not self.api.is_folder(path):
+            return {'n': self.api.get_name(path), 't': self.api.get_type(path).ordinal(), 'c': self.api.read(path)}
+
+        list = self.api.list_files(path)
         l = []
         for i in range(list.size()):
-            l.append(api_files.to_py(api.path_concat(path, list.get(i).name)))
-        return {'n': api.get_name(path), 't': ElementType.FOLDER.ordinal(), 'f': l}
+            l.append(self.to_py(self.api.path_concat(path, list.get(i).name)))
+        return {'n': self.api.get_name(path), 't': Type.FOLDER.ordinal(), 'f': l}
 
-    def from_py(path: str, d: dict):
+    def from_py(self, path: str, d: dict):
         if type(d) != dict:
             raise TypeError(f"from_py must get (str, dict) but taken ({type(path)}, {type(d)})")
-        f_path = api.path_concat(path, d['n'])
-        if d['t'] != ElementType.FOLDER.ordinal():
-            api.write(f_path, d['c'])
-            if d['t'] == ElementType.SCRIPT.ordinal():
-                api.script(f_path, True)
+        f_path = self.api.path_concat(path, d['n'])
+        if d['t'] != Type.FOLDER.ordinal():
+            self.api.write(f_path, d['c'])
+            if d['t'] == Type.SCRIPT.ordinal():
+                self.api.script(f_path, True)
             return
 
-        api.mkdir(f_path)
+        self.api.mkdir(f_path)
         for el in d['f']:
-            api_files.from_py(f_path, el)
+            self.from_py(f_path, el)
 
-    def to_json(path: str):
-        return json.dumps(api_files.to_py(path))
+    def to_json(self, path: str):
+        return json.dumps(self.to_py(path))
 
-    def from_json(path: str, d: str, replace = True):
+    def from_json(self, path: str, d: str, replace = True):
         d = json.loads(d)
-        if replace or not api.exists(api.path_concat(path, d['n'])):
-            api_files.from_py(path, d)
+        if replace or not self.api.exists(self.api.path_concat(path, d['n'])):
+            self.from_py(path, d)

@@ -1,51 +1,51 @@
 package com.matvey.perelman.notepad2.executor;
 
 import android.database.Cursor;
-import android.util.Log;
 
 import androidx.annotation.StringRes;
 
 import com.chaquo.python.PyObject;
+import com.matvey.perelman.notepad2.MainActivity;
 import com.matvey.perelman.notepad2.R;
 import com.matvey.perelman.notepad2.creator.CreatorElement;
 import com.matvey.perelman.notepad2.database.DatabaseElement;
 import com.matvey.perelman.notepad2.database.connection.DatabaseConnection;
-import com.matvey.perelman.notepad2.list.Adapter;
 import com.matvey.perelman.notepad2.list.ElementType;
 
 import java.util.ArrayList;
-import java.util.concurrent.CyclicBarrier;
 
 public class Executor implements AutoCloseable {
-    private final Adapter adapter;
+    private final MainActivity activity;
+    private final PyObject py_executor;
+    private final DatabaseConnection conn;
+
     private final CreatorElement celement;
     private final DatabaseElement delement;
-    private PyObject pyapi;
-    private final DatabaseConnection conn;
     private long folder_id;
     private long curr_path;
     private long script_id;
 
-    public Executor(DatabaseConnection connection, Adapter adapter) {
+    public Executor(DatabaseConnection connection, MainActivity activity, PyObject p) {
         this.conn = connection;
-        this.adapter = adapter;
+        this.activity = activity;
         celement = new CreatorElement();
         delement = new DatabaseElement();
+        PythonAPI api = new PythonAPI();
+        api.executor = this;
+        api.activity = activity;
+        py_executor = p.callAttr("__java_api_make_executor", api);
     }
 
-    public void setPython(PyObject p) {
-        this.pyapi = p;
-    }
 
     public void begin(long id, long parent) {
         String content = conn.getContent(id);
         script_id = id;
         folder_id = parent;
-        pyapi.callAttr("__java_api_run", content);
+        py_executor.callAttr("run_code", content);
     }
 
     public void makeDatabase(String json) {
-        pyapi.callAttr("__java_api_from_json", "/", json);
+        py_executor.callAttr("from_json", "/", json);
     }
 
     public String getPath() {
@@ -117,7 +117,7 @@ public class Executor implements AutoCloseable {
                     else
                         throw new RuntimeException(getString(R.string.error_bad_path));
                 }else if(conn.getType(new_path) != ElementType.FOLDER)
-                    throw new RuntimeException(PythonAPI.activity.getString(R.string.error_file2folder, arr.get(i)));
+                    throw new RuntimeException(activity.getString(R.string.error_file2folder, arr.get(i)));
                 else
                     curr_path = new_path;
             }
@@ -154,9 +154,9 @@ public class Executor implements AutoCloseable {
                     if(make_dir)
                         curr_path = defnewDir(arr.get(i));
                     else
-                        throw new RuntimeException(PythonAPI.activity.getString(R.string.error_bad_path));
+                        throw new RuntimeException(activity.getString(R.string.error_bad_path));
                 }else if(conn.getType(new_path) != ElementType.FOLDER)
-                    throw new RuntimeException(PythonAPI.activity.getString(R.string.error_file2folder, arr.get(i)));
+                    throw new RuntimeException(activity.getString(R.string.error_file2folder, arr.get(i)));
                 else
                     curr_path = new_path;
             }
@@ -188,7 +188,7 @@ public class Executor implements AutoCloseable {
         if (id == -1)
             defnewDir(dir);
         else if (conn.getType(id) != ElementType.FOLDER)
-            throw new RuntimeException(PythonAPI.activity.getString(R.string.error_file2folder, dir));
+            throw new RuntimeException(activity.getString(R.string.error_file2folder, dir));
     }
 
     public boolean delete(String entry) {
@@ -206,7 +206,7 @@ public class Executor implements AutoCloseable {
         if (id == -1) {
             id = defnewFile(file, false);
         } else if (conn.getType(id) == ElementType.FOLDER) {
-            throw new RuntimeException(PythonAPI.activity.getString(R.string.error_folder2file));
+            throw new RuntimeException(activity.getString(R.string.error_folder2file, file));
         }
         delement.id = id;
         delement.parent = curr_path;
@@ -217,7 +217,7 @@ public class Executor implements AutoCloseable {
     public String read(String file) {
         long id = conn.getID(curr_path, file);
         if (id == -1 || conn.getType(id) == ElementType.FOLDER)
-            throw new RuntimeException(PythonAPI.activity.getString(R.string.error_read_existence, file));
+            throw new RuntimeException(activity.getString(R.string.error_read_existence, file));
         return conn.getContent(id);
     }
 
@@ -226,7 +226,7 @@ public class Executor implements AutoCloseable {
         if (id == -1) {
             defnewFile(file, mode);
         } else if (conn.getType(id) == ElementType.FOLDER) {
-            throw new RuntimeException(PythonAPI.activity.getString(R.string.error_folder_to_script, file));
+            throw new RuntimeException(activity.getString(R.string.error_folder_to_script, file));
         } else {
             conn.getElement(id, delement);
             celement.id = delement.id;
@@ -258,7 +258,7 @@ public class Executor implements AutoCloseable {
         return conn.getType(conn.getID(curr_path, entry));
     }
 
-    public String path_concat(String path1, String path2) {
+    public static String path_concat(String path1, String path2) {
         path1 = path1.trim();
         path2 = path2.trim();
         if (path1.endsWith("/")) {
@@ -300,10 +300,6 @@ public class Executor implements AutoCloseable {
             return p.get(p.size() - 1);
     }
 
-    public void run(String path){
-        long id = conn.getID(curr_path, path);
-        adapter.runFile(curr_path, id);
-    }
     public void move(String entry_cut, String path_paste) {
         ArrayList<String> path_from = parsePath(entry_cut);
         String name = cdGoEntry(path_from, false);
@@ -318,7 +314,7 @@ public class Executor implements AutoCloseable {
         long to_dir = curr_path;
 
         if (conn.isParentFor(from_id, to_dir))//перемещение внутрь себя
-            throw new RuntimeException(PythonAPI.activity.getString(R.string.error_move_dest, entry_cut, path_paste));
+            throw new RuntimeException(activity.getString(R.string.error_move_dest, entry_cut, path_paste));
 
         if (from_dir == to_dir)//пункт назначения == пункту отправления
             return;
@@ -329,7 +325,7 @@ public class Executor implements AutoCloseable {
         conn.updateParent(from_id, from_dir, to_dir);
     }
     public String getString(@StringRes int id){
-        return PythonAPI.activity.getString(id);
+        return activity.getString(id);
     }
     @Override
     public void close() {
