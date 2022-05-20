@@ -130,7 +130,6 @@ public class CreatorDialog extends DialogFragment {
             setChecked();
             tv_dialog_name.setText(R.string.edit_item_text);
             name_text.setText(element.getName());
-            btn_create.setText(R.string.action_apply);
             btn_cut.setImageResource(R.drawable.cut_image);
             btn_cut.setEnabled(true);
             btn_delete.setVisibility(View.VISIBLE);
@@ -141,7 +140,6 @@ public class CreatorDialog extends DialogFragment {
             tv_dialog_name.setText(R.string.create_item_text);
             element.setName("");
             name_text.setText("");
-            btn_create.setText(R.string.action_create);
             btn_cut.setImageResource(R.drawable.paste_image);
             btn_cut.setEnabled(paste_available);
             btn_delete.setVisibility(View.INVISIBLE);

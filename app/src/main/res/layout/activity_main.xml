@@ -46,7 +46,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
             android:layout_margin="@dimen/fab_margin"
-            android:src="@drawable/create_new_file_img"
+            android:src="@drawable/fab_create_img"
             app:fabSize="normal" />
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 

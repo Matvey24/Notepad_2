@@ -23,10 +23,7 @@
     <string name="action_rollforward">Rollforward</string>
 
     <string name="create_item_text">Create item</string>
-    <string name="action_create">Create</string>
     <string name="edit_item_text">Edit item</string>
-    <string name="action_apply">Apply</string>
-
 
 
     <string name="error_bad_path">Non existent path \'%s\'</string>
@@ -40,5 +37,6 @@
     <string name="error_rename_exists">Could not rename: file \'%s\' already exists</string>
     <string name="error_folder_to_script">Could not convert folder \'%s\' to text / script</string>
     <string name="error_run_nofile">Could not run \'%s\' - not file</string>
+    <string name="action_ok">OK</string>
 
 </resources>

@@ -10,4 +10,5 @@
     <color name="white">#FFFFFFFF</color>
     <color name="text_primary">@color/white</color>
     <color name="on_background">@color/black</color>
+    <color name="btn_background">@color/purple_500</color>
 </resources>
