@@ -36,6 +36,5 @@
     <string name="error_rename_exists">Could not move / rename: file \'%s\' already exists</string>
     <string name="error_folder_to_script">Could not convert folder \'%s\' to text / script</string>
     <string name="error_run_nofile">Could not run \'%s\' - not file</string>
-    <string name="action_ok">OK</string>
 
 </resources>

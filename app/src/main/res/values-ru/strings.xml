@@ -23,5 +23,4 @@
     <string name="error_rename_exists">Невозможно переместить / переименовать: файл \'%s\' уже существует.</string>
     <string name="error_folder_to_script">Невозможно конвертировать папку \'%s\' в текст / скрипт</string>
     <string name="error_run_nofile">Невозможно запустить \'%s\' - не файл</string>
-    <string name="action_ok">ОК</string>
 </resources>

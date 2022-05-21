@@ -12,14 +12,18 @@ import com.matvey.perelman.notepad2.list.Adapter;
 import com.matvey.perelman.notepad2.creator.CreatorDialog;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.concurrent.CyclicBarrier;
@@ -27,6 +31,7 @@ import java.util.concurrent.CyclicBarrier;
 public class MainActivity extends AppCompatActivity {
     public ConstraintLayout root_layout;
     public Adapter adapter;
+    private TextView title;
     private Menu menu;
     public CreatorDialog creator_dialog;
 
@@ -44,6 +49,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         setSupportActionBar(findViewById(R.id.toolbar));
         root_layout = findViewById(R.id.root_layout);
+        super.setTitle(null);
+        title = findViewById(R.id.toolbar_title);
         //recycler view
         adapter = new Adapter(this);
         RecyclerView rv = findViewById(R.id.list_view);
@@ -125,6 +132,7 @@ public class MainActivity extends AppCompatActivity {
         editor.putBoolean("ask_before_delete", adapter.ask_before_delete);
         editor.apply();
     }
+
     public void makeToast(String text, boolean lon){
         runOnUiThread(()-> Toast.makeText(this, text, lon?Toast.LENGTH_LONG:Toast.LENGTH_SHORT).show());
     }
@@ -165,17 +173,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    public void setTitle(CharSequence title) {
+        this.title.setText(title);
+    }
+
+    @Override
     public void onBackPressed() {
         if (adapter.back())
             super.onBackPressed();
     }
-
     @Override
     public void onDestroy() {
         creator_dialog.onDestroy();
-        if(input_dialog != null) {
+        if(input_dialog != null)
             input_dialog.onDestroy();
-        }
         saveState();
         adapter.onClose();
         super.onDestroy();

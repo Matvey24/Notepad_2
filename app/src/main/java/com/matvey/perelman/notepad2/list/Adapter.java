@@ -64,13 +64,8 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
             public void onPathRenamed() {
                 if (cursor.getPathID() == 0)
                     main_activity.setTitle(R.string.app_name);
-                else {
-                    String s = cursor.path_t;
-                    if (s.length() > 30)
-                        s = ".." + s.substring(s.length() - 30);
-                    main_activity.setTitle(s);
-
-                }
+                else
+                    main_activity.setTitle(cursor.path_t);
             }
 
             @Override
@@ -184,24 +179,17 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
                     return;
                 }
                 Executor e = allocExecutor();
+                e.cdGoId(0);
+                id = e.mkdir("Help");
+                long ui_pos = id;
+                main_activity.runOnUiThread(()->cursor.enterUI(ui_pos));
                 e.makeDatabase(json);
                 freeExecutor(e);
-                id = connection.getID(0, "Help");
+                return;
             }
             ElementType type = connection.getType(id);
-            if (type == ElementType.SCRIPT) {
-                runFile(0, id);
-                return;
-            } else if (connection.getType(id) == ElementType.TEXT) {
-                long ui_id = id;
-                main_activity.runOnUiThread(() -> {
-                    cursor.enterUI(0);
-                    main_activity.start_editor(ui_id, cursor.indexOf(ui_id), connection.getName(ui_id), connection.getContent(ui_id));
-                });
-                return;
-            }
-
-            id = connection.getID(0, "Help");
+            if(type != ElementType.FOLDER)
+                id = 0;
             long ui_pos = id;
             main_activity.runOnUiThread(() -> cursor.enterUI(ui_pos));
         });

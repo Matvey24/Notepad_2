@@ -21,9 +21,9 @@ public class Executor implements AutoCloseable {
 
     private final CreatorElement celement;
     private final DatabaseElement delement;
-    private long folder_id;
-    private long curr_path;
+    private long script_folder;
     private long script_id;
+    private long curr_path;
 
     public Executor(DatabaseConnection connection, MainActivity activity, PyObject p) {
         this.conn = connection;
@@ -40,7 +40,7 @@ public class Executor implements AutoCloseable {
     public void begin(long id, long parent) {
         String content = conn.getContent(id);
         script_id = id;
-        folder_id = parent;
+        script_folder = parent;
         py_executor.callAttr("run_code", content);
     }
 
@@ -94,8 +94,8 @@ public class Executor implements AutoCloseable {
     //get name of entry, go to folder, that contains this entry
     public String cdGoEntry(String path, ArrayList<String> arr, boolean make_dir) {
         if(arr.size() == 0){
-            curr_path = conn.getParent(folder_id);
-            return conn.getName(folder_id);
+            curr_path = conn.getParent(script_folder);
+            return conn.getName(script_folder);
         }
         int i = 0;
         if(arr.get(0).equals("/")){
@@ -104,7 +104,7 @@ public class Executor implements AutoCloseable {
             if(arr.size() == 1)
                 return "/";
         }else
-            curr_path = folder_id;
+            curr_path = script_folder;
 
         for(; i < arr.size() - 1; ++i){
             if ("..".equals(arr.get(i)))
@@ -132,10 +132,13 @@ public class Executor implements AutoCloseable {
         }
         return last;
     }
+    public void cdGoId(long fold){
+        curr_path = fold;
+    }
     //go to the folder
     public void cdGo(String path, ArrayList<String> arr, boolean make_dir){
         if(arr.size() == 0){
-            curr_path = folder_id;
+            curr_path = script_folder;
             return;
         }
         int i = 0;
@@ -143,7 +146,7 @@ public class Executor implements AutoCloseable {
             curr_path = 0;
             i = 1;
         }else
-            curr_path = folder_id;
+            curr_path = script_folder;
 
         for(; i < arr.size(); ++i){
             if("..".equals(arr.get(i)))
@@ -183,12 +186,13 @@ public class Executor implements AutoCloseable {
             defnewFile(entry, false);
     }
 
-    public void mkdir(String dir) {
+    public long mkdir(String dir) {
         long id = conn.getID(curr_path, dir);
         if (id == -1)
-            defnewDir(dir);
+            return defnewDir(dir);
         else if (conn.getType(id) != ElementType.FOLDER)
             throw new RuntimeException(activity.getString(R.string.error_file2folder, dir));
+        return id;
     }
 
     public boolean delete(String entry) {
