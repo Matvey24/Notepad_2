@@ -179,12 +179,15 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
                     return;
                 }
                 Executor e = allocExecutor();
-                e.cdGoId(0);
-                id = e.mkdir("Help");
-                long ui_pos = id;
-                main_activity.runOnUiThread(()->cursor.enterUI(ui_pos));
-                e.makeDatabase(json);
-                freeExecutor(e);
+                e.mkdir("/Help");
+                long ui_pos = connection.getID(0, "Help");
+                main_activity.runOnUiThread(()->{
+                    cursor.enterUI(ui_pos);
+                    tasks.runTask(()->{
+                        e.makeDatabase(json);
+                        freeExecutor(e);
+                    });
+                });
                 return;
             }
             ElementType type = connection.getType(id);

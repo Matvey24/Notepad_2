@@ -21,7 +21,7 @@ public class Executor implements AutoCloseable {
 
     private final CreatorElement celement;
     private final DatabaseElement delement;
-    private long script_folder;
+    private long vis_folder;
     private long script_id;
     private long curr_path;
 
@@ -30,17 +30,14 @@ public class Executor implements AutoCloseable {
         this.activity = activity;
         celement = new CreatorElement();
         delement = new DatabaseElement();
-        PythonAPI api = new PythonAPI();
-        api.executor = this;
-        api.activity = activity;
-        py_executor = p.callAttr("__java_api_make_executor", api);
+        py_executor = p.callAttr("__java_api_make_executor", this, activity);
     }
 
 
     public void begin(long id, long parent) {
         String content = conn.getContent(id);
         script_id = id;
-        script_folder = parent;
+        vis_folder = parent;
         py_executor.callAttr("run_code", content);
     }
 
@@ -48,13 +45,16 @@ public class Executor implements AutoCloseable {
         py_executor.callAttr("from_json", "/", json);
     }
 
-    public String getPath() {
+    public String getScriptPath() {
         return conn.buildPath(script_id);
+    }
+    public String getPath() {
+        return conn.buildPath(vis_folder);
     }
     public String getScriptName(){
         return conn.getName(script_id);
     }
-    public ArrayList<String> parsePath(String path) {
+    public static ArrayList<String> parsePath(String path) {
         if (path.trim().equals("/")) {
             ArrayList<String> list = new ArrayList<>();
             list.add(path);
@@ -94,8 +94,8 @@ public class Executor implements AutoCloseable {
     //get name of entry, go to folder, that contains this entry
     public String cdGoEntry(String path, ArrayList<String> arr, boolean make_dir) {
         if(arr.size() == 0){
-            curr_path = conn.getParent(script_folder);
-            return conn.getName(script_folder);
+            curr_path = conn.getParent(vis_folder);
+            return conn.getName(vis_folder);
         }
         int i = 0;
         if(arr.get(0).equals("/")){
@@ -104,7 +104,7 @@ public class Executor implements AutoCloseable {
             if(arr.size() == 1)
                 return "/";
         }else
-            curr_path = script_folder;
+            curr_path = vis_folder;
 
         for(; i < arr.size() - 1; ++i){
             if ("..".equals(arr.get(i)))
@@ -138,7 +138,7 @@ public class Executor implements AutoCloseable {
     //go to the folder
     public void cdGo(String path, ArrayList<String> arr, boolean make_dir){
         if(arr.size() == 0){
-            curr_path = script_folder;
+            curr_path = vis_folder;
             return;
         }
         int i = 0;
@@ -146,7 +146,7 @@ public class Executor implements AutoCloseable {
             curr_path = 0;
             i = 1;
         }else
-            curr_path = script_folder;
+            curr_path = vis_folder;
 
         for(; i < arr.size(); ++i){
             if("..".equals(arr.get(i)))
@@ -180,22 +180,24 @@ public class Executor implements AutoCloseable {
         return conn.newElement(celement);
     }
 
-    public void touch(String entry) {
+    public void touch(String tpath) {
+        String entry = cdGoEntry(tpath, Executor.parsePath(tpath), true);
         long id = conn.getID(curr_path, entry);
         if (id == -1)
             defnewFile(entry, false);
     }
 
-    public long mkdir(String dir) {
+    public void mkdir(String dpath) {
+        String dir = cdGoEntry(dpath, Executor.parsePath(dpath), true);
         long id = conn.getID(curr_path, dir);
         if (id == -1)
-            return defnewDir(dir);
+            defnewDir(dir);
         else if (conn.getType(id) != ElementType.FOLDER)
             throw new RuntimeException(activity.getString(R.string.error_file2folder, dir));
-        return id;
     }
 
-    public boolean delete(String entry) {
+    public boolean delete(String path) {
+        String entry = cdGoEntry(path, Executor.parsePath(path), false);
         long id = conn.getID(curr_path, entry);
         if (id < 1) {
             return false;
@@ -205,7 +207,8 @@ public class Executor implements AutoCloseable {
         }
     }
 
-    public void write(String file, String content) {
+    public void write(String fpath, String content) {
+        String file = cdGoEntry(fpath, Executor.parsePath(fpath), true);
         long id = conn.getID(curr_path, file);
         if (id == -1) {
             id = defnewFile(file, false);
@@ -218,14 +221,16 @@ public class Executor implements AutoCloseable {
         conn.updateTextData(delement);
     }
 
-    public String read(String file) {
+    public String read(String fpath) {
+        String file = cdGoEntry(fpath, Executor.parsePath(fpath), false);
         long id = conn.getID(curr_path, file);
         if (id == -1 || conn.getType(id) == ElementType.FOLDER)
             throw new RuntimeException(activity.getString(R.string.error_read_existence, file));
         return conn.getContent(id);
     }
 
-    public void script(String file, boolean mode) {
+    public void script(String fpath, boolean mode) {
+        String file = cdGoEntry(fpath, Executor.parsePath(fpath), true);
         long id = conn.getID(curr_path, file);
         if (id == -1) {
             defnewFile(file, mode);
@@ -243,7 +248,8 @@ public class Executor implements AutoCloseable {
         }
     }
 
-    public ArrayList<DatabaseElement> listFiles() {
+    public ArrayList<DatabaseElement> listFiles(String dpath) {
+        cdGo(dpath, Executor.parsePath(dpath), false);
         ArrayList<DatabaseElement> list = new ArrayList<>();
         Cursor cursor = conn.getListFiles(curr_path);
         for (int i = 0; i < cursor.getCount(); ++i) {
@@ -254,11 +260,13 @@ public class Executor implements AutoCloseable {
         return list;
     }
 
-    public boolean exists(String entry) {
+    public boolean exists(String path) {
+        String entry = cdGoEntry(path, Executor.parsePath(path), false);
         return conn.getID(curr_path, entry) != -1;
     }
 
-    public ElementType getType(String entry) {
+    public ElementType getType(String path) {
+        String entry = cdGoEntry(path, Executor.parsePath(path), false);
         return conn.getType(conn.getID(curr_path, entry));
     }
 
@@ -280,20 +288,21 @@ public class Executor implements AutoCloseable {
         }
     }
 
-    public int rename(String name1, String name2) {
+    public void rename(String epath, String name2) {
+        String name1 = cdGoEntry(epath, Executor.parsePath(epath), false);
+
         long id = conn.getID(curr_path, name1);
         if (id < 1)
-            return 1;
+            throw new RuntimeException(activity.getString(R.string.error_bad_path, epath));
         long id2 = conn.getID(curr_path, name2);
         if (id2 != -1)
-            return 2;
+            throw new RuntimeException(activity.getString(R.string.error_rename_exists, epath));
         celement.id = id;
         celement.parent = curr_path;
         celement.setType(conn.getType(id));
         celement.setName(name1);
         celement.updateName(name2);
         conn.updateElement(celement);
-        return 0;
     }
 
     public String getName(String path) {
@@ -336,6 +345,11 @@ public class Executor implements AutoCloseable {
         else
             throw new RuntimeException(getString(R.string.error_run_nofile, path));
     }
+    public void cd(String dpath){
+        cdGo(dpath, parsePath(dpath), true);
+        vis_folder = curr_path;
+    }
+
     public String getString(@StringRes int id, String text){
         return activity.getString(id, text);
     }
