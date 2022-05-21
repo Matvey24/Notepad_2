@@ -53,9 +53,9 @@ public class PythonAPI {
         String entry = executor.cdGoEntry(epath, executor.parsePath(epath), false);
         switch (executor.rename(entry, name)){
             case 1:
-                throw new RuntimeException(activity.getString(R.string.error_bad_path));
+                throw new RuntimeException(activity.getString(R.string.error_bad_path, epath));
             case 2:
-                throw new RuntimeException(activity.getString(R.string.error_rename_exists));
+                throw new RuntimeException(activity.getString(R.string.error_rename_exists, epath));
         }
     }
     public String path_concat(String path1, String path2){

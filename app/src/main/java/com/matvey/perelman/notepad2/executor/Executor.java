@@ -321,7 +321,7 @@ public class Executor implements AutoCloseable {
 
         long err_id = conn.getID(to_dir, name);
         if(err_id != -1)
-            throw new RuntimeException(getString(R.string.error_rename_exists, path_paste));
+            throw new RuntimeException(getString(R.string.error_rename_exists, path_concat(path_paste, name)));
         conn.updateParent(from_id, from_dir, to_dir);
     }
     public void run(String path){

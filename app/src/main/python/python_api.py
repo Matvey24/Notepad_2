@@ -60,7 +60,7 @@ class api_files:
 
     def from_py(self, path: str, d: dict):
         if type(d) != dict:
-            raise TypeError(f"from_py must get (str, dict) but taken ({type(path)}, {type(d)})")
+            raise TypeError(f"from_py requires (str, dict) but taken ({type(path)}, {type(d)})")
         f_path = self.api.path_concat(path, d['n'])
         if d['t'] != Type.FOLDER.ordinal():
             self.api.write(f_path, d['c'])

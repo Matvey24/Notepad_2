@@ -1,5 +1,6 @@
 package com.matvey.perelman.notepad2.list;
 
+import android.content.res.Resources;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
@@ -19,6 +20,9 @@ import com.matvey.perelman.notepad2.database.connection.ViewListener;
 import com.matvey.perelman.notepad2.executor.Executor;
 import com.matvey.perelman.notepad2.utils.threads.Tasks;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Stack;
 
 public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
@@ -164,10 +168,25 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
         tasks.runTask(() -> {
             long id = connection.getID(0, "Help");
             if (id == -1) {
-                String json = main_activity.getString(R.string.help_text);
+                String json;
+                try{
+                    Resources r = main_activity.getResources();
+                    InputStream is = r.openRawResource(R.raw.help_text);
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    int i = is.read();
+                    while(i != -1){
+                        baos.write(i);
+                        i = is.read();
+                    }
+                    json = baos.toString();
+                }catch (IOException e){
+                    e.printStackTrace();
+                    return;
+                }
                 Executor e = allocExecutor();
                 e.makeDatabase(json);
                 freeExecutor(e);
+                id = connection.getID(0, "Help");
             }
             ElementType type = connection.getType(id);
             if (type == ElementType.SCRIPT) {
