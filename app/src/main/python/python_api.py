@@ -12,14 +12,13 @@ def __java_api_make_executor(executor, activity):
 class Executor:
     def __init__(self, executor, activity):
         self.api = API(executor, activity)
-        self.api_files = APIFILES(self.api)
 
     def run_code(self, code: str):
         saved_stdout = StringIO()
         saved_stderr = StringIO()
         sys.stdout = saved_stdout
         sys.stderr = saved_stderr
-        glob = {'traceback': traceback, 'json':json, 'api': self.api, 'api_files': self.api_files, 'Type': Type, 'input':self.api.input}
+        glob = {'traceback': traceback, 'json':json, 'api': self.api, 'Type': Type, 'input':self.api.input}
         try:
             exec(code, glob, glob)
         except Exception as ex:
@@ -37,7 +36,7 @@ class Executor:
         saved_stderr.close()
 
     def from_json(self, path: str, st: str):
-        self.api_files.from_json(path, st)
+        self.api.from_json(path, st)
 
 
 class API:
@@ -45,56 +44,56 @@ class API:
         self.executor = executor
         self.activity = activity
 
-    def toast(self, text: str, len = False):
+    def toast(self, text: str, len: bool = False):
         self.activity.makeToast(text, len)
 
     def touch(self, tpath: str):
         self.executor.touch(tpath)
 
-    def read(self, fpath: str):
+    def read(self, fpath: str) -> str:
         return self.executor.read(fpath)
 
     def write(self, fpath: str, content: str):
         self.executor.write(fpath, content)
 
-    def script(self, fpath: str, mode = True):
+    def script(self, fpath: str, mode :bool = True):
         self.executor.script(fpath, mode)
 
     def mkdir(self, dpath: str):
         self.executor.mkdir(dpath)
 
-    def delete(self, path: str):
+    def delete(self, path: str) -> bool:
         return self.executor.delete(path)
 
-    def path(self):
+    def path(self) -> str:
         return self.executor.getPath()
 
-    def script_path(self):
+    def script_path(self) -> str:
         return self.executor.getScriptPath()
 
-    def script_name(self):
+    def script_name(self) -> str:
         return self.executor.getScriptName()
 
-    def get_name(self, path: str):
+    def get_name(self, path: str) -> str:
         return self.executor.getName(path)
 
     def rename(self, path: str, name: str):
         self.executor.rename(path, name)
 
     @staticmethod
-    def path_concat(path1: str, path2: str):
+    def path_concat(path1: str, path2: str) -> str:
         return JAVAExecutor.path_concat(path1, path2)
 
-    def exists(self, path: str):
+    def exists(self, path: str) -> bool:
         return self.executor.exists(path)
 
-    def is_folder(self, path: str):
+    def is_folder(self, path: str) -> bool:
         return self.get_type(path) == Type.FOLDER
 
-    def is_script(self, path: str):
+    def is_script(self, path: str) -> bool:
         return self.get_type(path) == Type.SCRIPT
 
-    def get_type(self, path: str):
+    def get_type(self, path: str) -> Type:
         return self.executor.getType(path)
 
     def list_files(self, dpath: str):
@@ -103,7 +102,7 @@ class API:
     def move(self, path_cut: str, path_paste: str):
         self.executor.move(path_cut, path_paste)
 
-    def input(self, input_name = 'input'):
+    def input(self, input_name = 'input') -> str:
         return self.activity.showInputDialog(input_name)
 
     def run(self, fpath: str):
@@ -113,42 +112,57 @@ class API:
         self.executor.cd(dpath)
 
 
+    def to_py(self, path: str) -> dict:
+        if not self.exists(path):
+            raise FileNotFoundError(path)
+        p = self.path()
+        try:
+            name = self.get_name(path)
+            self.cd(self.path_concat(path, ".."))
+            d = self.__to_py_req(name)
+        finally:
+            self.cd(p)
 
-class APIFILES:
-    def __init__(self, api):
-        self.api = api
+        return d
 
-    def to_py(self, path: str):
-        if not self.api.exists(path):
-            return None
-        if not self.api.is_folder(path):
-            return {'n': self.api.get_name(path), 't': self.api.get_type(path).ordinal(), 'c': self.api.read(path)}
+    def __to_py_req(self, name: str) -> dict:
+        if not self.is_folder(name):
+            return {'n': name, 't': self.get_type(name).ordinal(), 'c': self.read(name)}
 
-        list = self.api.list_files(path)
+        self.cd(name)
+        list = self.list_files('.')
         l = []
         for i in range(list.size()):
-            l.append(self.to_py(self.api.path_concat(path, list.get(i).name)))
-        return {'n': self.api.get_name(path), 't': Type.FOLDER.ordinal(), 'f': l}
+            l.append(self.__to_py_req(list.get(i).name))
+        self.cd('..')
+        return {'n': name, 't': Type.FOLDER.ordinal(), 'f': l}
 
     def from_py(self, path: str, d: dict):
         if type(d) != dict:
             raise TypeError(f"from_py requires (str, dict) but taken ({type(path)}, {type(d)})")
 
-        f_path = self.api.path_concat(path, d['n'])
+        p = self.path()
+        try:
+            self.cd(path)
+            self.__from_py_req(d)
+        finally:
+            self.cd(p)
+
+    def __from_py_req(self, d: dict):
         if d['t'] != Type.FOLDER.ordinal():
-            self.api.write(f_path, d['c'])
-            if d['t'] == Type.SCRIPT.ordinal():
-                self.api.script(f_path, True)
+            self.write(d['n'], d['c'])
+            self.script(d['n'], d['t'] == Type.SCRIPT.ordinal())
             return
 
-        self.api.mkdir(f_path)
+        self.cd(d['n'])
         for el in d['f']:
-            self.from_py(f_path, el)
+            self.__from_py_req(el)
+        self.cd('..')
 
-    def to_json(self, path: str):
+    def to_json(self, path: str) -> str:
         return json.dumps(self.to_py(path))
 
     def from_json(self, path: str, d: str, replace = True):
         d = json.loads(d)
-        if replace or not self.api.exists(self.api.path_concat(path, d['n'])):
+        if replace or not self.exists(self.path_concat(path, d['n'])):
             self.from_py(path, d)

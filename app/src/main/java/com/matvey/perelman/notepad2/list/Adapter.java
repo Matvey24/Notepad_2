@@ -161,7 +161,8 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
 
     public void goHelp() {
         tasks.runTask(() -> {
-            long id = connection.getID(0, "Help");
+            String help_name = main_activity.getString(R.string.folder_help_name);
+            long id = connection.getID(0, help_name);
             if (id == -1) {
                 String json;
                 try{
@@ -179,8 +180,8 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
                     return;
                 }
                 Executor e = allocExecutor();
-                e.mkdir("/Help");
-                long ui_pos = connection.getID(0, "Help");
+                e.mkdir("/" + help_name);
+                long ui_pos = connection.getID(0, help_name);
                 main_activity.runOnUiThread(()->{
                     cursor.enterUI(ui_pos);
                     tasks.runTask(()->{
