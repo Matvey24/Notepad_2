@@ -43,7 +43,7 @@ public class Executor implements AutoCloseable {
 
     public void makeDatabase(String json) {
         vis_folder = 0;
-        py_executor.callAttr("from_json", "/", json);
+        py_executor.callAttr("from_json", json, "/");
     }
 
     public String getScriptPath() {

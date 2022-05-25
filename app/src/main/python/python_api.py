@@ -39,8 +39,8 @@ class Executor:
         saved_stdout.close()
         saved_stderr.close()
 
-    def from_json(self, path: str, st: str):
-        self.api.from_json(path, st)
+    def from_json(self, st: str, path: str):
+        self.api.from_json(st, path)
 
 
 class API:
