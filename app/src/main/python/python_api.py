@@ -141,9 +141,12 @@ class API:
         self.cd('..')
         return {'n': name, 't': Type.FOLDER.ordinal(), 'f': l}
 
-    def from_py(self, path: str, d: dict):
+    def from_py(self, d: dict, path: str = '.', replace = True):
         if type(d) != dict:
-            raise TypeError(f"from_py requires (str, dict) but taken ({type(path)}, {type(d)})")
+            raise TypeError(f"from_py requires (dict, str, bool) but taken ({type(path)}, {type(d)}, {type(replace)})")
+
+        if not replace and self.exists(self.path_concat(path, d['n'])):
+            return
 
         p = self.path()
         try:
@@ -166,7 +169,7 @@ class API:
     def to_json(self, path: str) -> str:
         return json.dumps(self.to_py(path))
 
-    def from_json(self, path: str, d: str, replace = True):
+    def from_json(self, d: str, path: str = '.', replace = True):
         d = json.loads(d)
         if replace or not self.exists(self.path_concat(path, d['n'])):
-            self.from_py(path, d)
+            self.from_py(d, path)
