@@ -6,19 +6,23 @@ from io import StringIO
 
 import json
 
-def __java_api_make_executor(executor, activity):
-    return Executor(executor, activity)
+def __java_api_make_dict():
+    return {}
+
+def __java_api_make_executor(executor, activity, space):
+    return Executor(executor, activity, space)
 
 class Executor:
-    def __init__(self, executor, activity):
+    def __init__(self, executor, activity, space):
         self.api = API(executor, activity)
+        self.space = space
 
     def run_code(self, code: str):
         saved_stdout = StringIO()
         saved_stderr = StringIO()
         sys.stdout = saved_stdout
         sys.stderr = saved_stderr
-        glob = {'traceback': traceback, 'json':json, 'api': self.api, 'Type': Type, 'input':self.api.input}
+        glob = {'traceback': traceback, 'json': json, 'api': self.api, 'Type': Type, 'input': self.api.input, 'space': self.space}
         try:
             exec(code, glob, glob)
         except Exception as ex:

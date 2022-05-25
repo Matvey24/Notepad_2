@@ -25,12 +25,12 @@ public class Executor implements AutoCloseable {
     private long script_id;
     private long curr_path;
 
-    public Executor(DatabaseConnection connection, MainActivity activity, PyObject p) {
+    public Executor(DatabaseConnection connection, MainActivity activity, PyObject api, PyObject space) {
         this.conn = connection;
         this.activity = activity;
         celement = new CreatorElement();
         delement = new DatabaseElement();
-        py_executor = p.callAttr("__java_api_make_executor", this, activity);
+        py_executor = api.callAttr("__java_api_make_executor", this, activity, space);
     }
 
 

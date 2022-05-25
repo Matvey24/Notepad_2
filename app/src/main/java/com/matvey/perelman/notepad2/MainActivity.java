@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 
+import com.chaquo.python.PyObject;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.matvey.perelman.notepad2.creator.CreatorElement;
 import com.matvey.perelman.notepad2.executor.InputDialog;
@@ -41,7 +42,6 @@ public class MainActivity extends AppCompatActivity {
 
     private InputDialog input_dialog = null;
     private CyclicBarrier barrier = null;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

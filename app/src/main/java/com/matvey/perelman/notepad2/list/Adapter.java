@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.chaquo.python.PyObject;
 import com.chaquo.python.Python;
 import com.chaquo.python.android.AndroidPlatform;
 import com.google.android.material.snackbar.Snackbar;
@@ -34,6 +35,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
     private final Stack<Executor> executors;
 
     private final Tasks tasks;
+    private PyObject space;
     public String path_to_cut;
 
     public Adapter(MainActivity main_activity) {
@@ -82,6 +84,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
         tasks.runTask(() -> {
             if (!Python.isStarted())
                 Python.start(new AndroidPlatform(main_activity));
+            space = Python.getInstance().getModule("python_api").callAttr("__java_api_make_dict");
         });
     }
 
@@ -119,7 +122,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
     private Executor allocExecutor() {
         synchronized (executors) {
             if (executors.isEmpty())
-                return new Executor(connection, main_activity, Python.getInstance().getModule("python_api"));
+                return new Executor(connection, main_activity, Python.getInstance().getModule("python_api"), space);
             else
                 return executors.pop();
         }
