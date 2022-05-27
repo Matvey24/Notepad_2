@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 
-import com.chaquo.python.PyObject;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.matvey.perelman.notepad2.creator.CreatorElement;
 import com.matvey.perelman.notepad2.executor.InputDialog;
@@ -13,16 +12,13 @@ import com.matvey.perelman.notepad2.list.Adapter;
 import com.matvey.perelman.notepad2.creator.CreatorDialog;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.TextView;
 import android.widget.Toast;
