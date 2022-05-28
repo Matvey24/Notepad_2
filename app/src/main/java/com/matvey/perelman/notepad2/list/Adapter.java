@@ -111,7 +111,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
             e.move(path_to_cut, cursor.path_t);
             path_to_cut = null;
         }catch (RuntimeException ex){
-            main_activity.makeToast(ex.toString(), true);
+            main_activity.makeToast(ex.getMessage(), true);
         }
         freeExecutor(e);
     }
@@ -134,10 +134,10 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
         }
     }
 
-    public void runFile(long parent, long id) {
+    public void runFile(String filepath, long parent, long id) {
         tasks.runTask(() -> {
             Executor e = allocExecutor();
-            e.begin(id, parent);
+            e.begin(filepath, id, parent);
             freeExecutor(e);
         });
     }
@@ -158,7 +158,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
             String content = connection.getContent(element.id);
             main_activity.start_editor(element.id, position, element.name, content);
         } else if (element.type == ElementType.SCRIPT) {
-            runFile(element.parent, element.id);
+            runFile(path_concat(cursor.path_t, element.name), element.parent, element.id);
         }
     }
 

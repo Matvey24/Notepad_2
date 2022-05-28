@@ -30,7 +30,7 @@
     <string name="error_file2folder">Could not mkdir, file with the same name exists: \'%s\'</string>
     <string name="error_folder2file">Could not write to folder: \'%s\'</string>
     <string name="error_read_existence">Could not read: file \'%s\' does not exist</string>
-    <string name="error_move_dest">move dest \'%s\' is in src \'%s\'</string>
+    <string name="error_move_dest">move dest \'%s\' is in moving object \'%s\'</string>
     <string name="error_move_file">Could not move to file \'%s\'</string>
 
     <string name="error_rename_exists">Could not move / rename: file \'%s\' already exists</string>

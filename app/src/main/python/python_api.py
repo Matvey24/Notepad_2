@@ -1,10 +1,12 @@
 from com.matvey.perelman.notepad2.list import ElementType as Type
 from com.matvey.perelman.notepad2.executor import Executor as JAVAExecutor
+from java.lang import RuntimeException
 import sys
 import traceback
 from io import StringIO
 
 import json
+from functools import wraps
 
 def __java_api_make_dict():
     return {}
@@ -12,21 +14,33 @@ def __java_api_make_dict():
 def __java_api_make_executor(executor, activity, space):
     return Executor(executor, activity, space)
 
+def simple_exceptions(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except RuntimeException as ex:
+            string = ex.getMessage()
+        raise Exception(string)
+    
+    return wrapper
+
 class Executor:
     def __init__(self, executor, activity, space):
         self.api = API(executor, activity)
         self.space = space
 
-    def run_code(self, code: str):
+    def run_code(self, filename: str, code: str):
         saved_stdout = StringIO()
         saved_stderr = StringIO()
         sys.stdout = saved_stdout
         sys.stderr = saved_stderr
         glob = {'traceback': traceback, 'json': json, 'api': self.api, 'Type': Type, 'input': self.api.input, 'space': self.space}
         try:
-            exec(code, glob, glob)
+            code_object = compile(code, filename, 'exec')
+            exec(code_object, glob)
         except Exception as ex:
-            self.api.toast(repr(ex), True)
+            self.api.toast(str(ex), True)
             traceback.print_exc()
 
         out = saved_stdout.getvalue()
@@ -51,21 +65,27 @@ class API:
     def toast(self, text: str, len: bool = False):
         self.activity.makeToast(text, len)
 
+    @simple_exceptions
     def touch(self, tpath: str):
         self.executor.touch(tpath)
 
+    @simple_exceptions
     def read(self, fpath: str) -> str:
         return self.executor.read(fpath)
 
+    @simple_exceptions
     def write(self, fpath: str, content: str):
         self.executor.write(fpath, content)
 
+    @simple_exceptions
     def script(self, fpath: str, mode :bool = True):
         self.executor.script(fpath, mode)
 
+    @simple_exceptions
     def mkdir(self, dpath: str):
         self.executor.mkdir(dpath)
 
+    @simple_exceptions
     def delete(self, path: str) -> bool:
         return self.executor.delete(path)
 
@@ -78,9 +98,11 @@ class API:
     def script_name(self) -> str:
         return self.executor.getScriptName()
 
+    @simple_exceptions
     def get_name(self, path: str) -> str:
         return self.executor.getName(path)
 
+    @simple_exceptions
     def rename(self, path: str, name: str):
         self.executor.rename(path, name)
 
@@ -88,30 +110,38 @@ class API:
     def path_concat(path1: str, path2: str) -> str:
         return JAVAExecutor.path_concat(path1, path2)
 
+    @simple_exceptions
     def exists(self, path: str) -> bool:
         return self.executor.exists(path)
 
+    @simple_exceptions
     def is_folder(self, path: str) -> bool:
         return self.get_type(path) == Type.FOLDER
 
+    @simple_exceptions
     def is_script(self, path: str) -> bool:
         return self.get_type(path) == Type.SCRIPT
 
+    @simple_exceptions
     def get_type(self, path: str) -> Type:
         return self.executor.getType(path)
 
+    @simple_exceptions
     def list_files(self, dpath: str):
         return self.executor.listFiles(dpath)
 
+    @simple_exceptions
     def move(self, path_cut: str, path_paste: str):
         self.executor.move(path_cut, path_paste)
 
     def input(self, input_name = 'input') -> str:
         return self.activity.showInputDialog(input_name)
 
+    @simple_exceptions
     def run(self, fpath: str):
         self.executor.run(fpath)
 
+    @simple_exceptions
     def cd(self, dpath: str):
         self.executor.cd(dpath)
 

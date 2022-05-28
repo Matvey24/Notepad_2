@@ -18,7 +18,7 @@
     <string name="error_file2folder">Невозможно создать папку, файл с тем же именем существует: \'%s\'</string>
     <string name="error_folder2file">Невозможно записывать в папку: \'%s\'</string>
     <string name="error_read_existence">Невозможно читать: файл \'%s\' не существует</string>
-    <string name="error_move_dest">Конечная папка перемещения \'%s\' внутри исходной \'%s\'</string>
+    <string name="error_move_dest">Конечная папка перемещения \'%s\' внутри перемещаемого объекта \'%s\'</string>
     <string name="error_move_file">Невозможно переместить в файл \'%s\'</string>
     <string name="error_rename_exists">Невозможно переместить / переименовать: файл \'%s\' уже существует.</string>
     <string name="error_folder_to_script">Невозможно конвертировать папку \'%s\' в текст / скрипт</string>

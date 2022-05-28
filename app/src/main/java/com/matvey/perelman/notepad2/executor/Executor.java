@@ -21,8 +21,9 @@ public class Executor implements AutoCloseable {
 
     private final CreatorElement celement;
     private final DatabaseElement delement;
+
+    private String filepath;
     private long vis_folder;
-    private long script_id;
     private long curr_path;
 
     public Executor(DatabaseConnection connection, MainActivity activity, PyObject api, PyObject space) {
@@ -34,11 +35,11 @@ public class Executor implements AutoCloseable {
     }
 
 
-    public void begin(long id, long parent) {
+    public void begin(String filepath, long id, long parent) {
         String content = conn.getContent(id);
-        script_id = id;
+        this.filepath = filepath;
         vis_folder = parent;
-        py_executor.callAttr("run_code", content);
+        py_executor.callAttr("run_code", filepath, content);
     }
 
     public void makeDatabase(String json) {
@@ -47,13 +48,13 @@ public class Executor implements AutoCloseable {
     }
 
     public String getScriptPath() {
-        return conn.buildPath(script_id);
+        return filepath;
     }
     public String getPath() {
         return conn.buildPath(vis_folder);
     }
     public String getScriptName(){
-        return conn.getName(script_id);
+        return getName(filepath);
     }
     public static ArrayList<String> parsePath(String path) {
         if (path.trim().equals("/")) {
@@ -327,7 +328,7 @@ public class Executor implements AutoCloseable {
         cdGo(path_paste, path_to, true);
         long to_dir = curr_path;
 
-        if (conn.isParentFor(from_id, to_dir))//перемещение внутрь себя
+        if (from_id == to_dir || conn.isParentFor(from_id, to_dir))//перемещение внутрь себя
             throw new RuntimeException(activity.getString(R.string.error_move_dest, entry_cut, path_paste));
 
         if (from_dir == to_dir)//пункт назначения == пункту отправления
@@ -342,7 +343,7 @@ public class Executor implements AutoCloseable {
         String entry = cdGoEntry(path, parsePath(path), false);
         long id = conn.getID(curr_path, entry);
         if(id != -1 && conn.getType(id) != ElementType.FOLDER)
-            activity.adapter.runFile(curr_path, id);
+            activity.adapter.runFile(conn.buildPath(id), curr_path, id);
         else
             throw new RuntimeException(getString(R.string.error_run_nofile, path));
     }

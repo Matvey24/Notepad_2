@@ -54,8 +54,7 @@ public class DatabaseConnection {
                 listener.onChangeItem(id);
         }
     }
-    private void onChangeName(long parent, long id){
-        onChangeItem(parent, id);
+    private void onChangeName(long parent){
         for(IDListener listener: cursors){
             if(isParentFor(parent, listener.getPathID()))
                 listener.onPathRenamed();
@@ -196,10 +195,12 @@ public class DatabaseConnection {
             st.execute();
             updatedType = true;
         }
-        if(updatedName && element.getType() == ElementType.FOLDER)
-            onChangeName(element.parent, element.id);
-        else if(updatedName || updatedType)
+        if(updatedName && element.getType() == ElementType.FOLDER) {
             onChangeItem(element.parent, element.id);
+            onChangeName(element.parent);
+        }else if(updatedName || updatedType) {
+            onChangeItem(element.parent, element.id);
+        }
     }
     public synchronized void updateParent(long id, long old_parent, long new_parent){
         SQLiteStatement st = db.compileStatement("UPDATE main SET parent = ? WHERE ID = ?");
@@ -208,6 +209,7 @@ public class DatabaseConnection {
         st.execute();
         onDeleteItem(old_parent, id);
         onNewItem(new_parent, id);
+        onChangeName(new_parent);
     }
     public synchronized void deleteElement(long parent, long id) {
         SQLiteStatement st = db.compileStatement("DELETE FROM main WHERE ID == ?");
