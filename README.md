@@ -16,3 +16,4 @@ For example:
 ## Installation
 Install the [newest debug version](https://github.com/Matvey24/Notepad_2/raw/master/app/build/outputs/apk/debug/app-debug.apk) by downloading apk from this GitHub.
 
+Or [stable release apk](https://github.com/Matvey24/Notepad_2/raw/master/app/release/app-release.apk) from GitHub.

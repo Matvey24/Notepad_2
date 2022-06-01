@@ -3,6 +3,14 @@ plugins {
     id 'com.chaquo.python'
 }
 android {
+    signingConfigs {
+        'main sign' {
+            storeFile file('C:\\Users\\Matvey\\Documents\\android keys\\notepad\\android_key.jks')
+            storePassword 'matvey24_Perelman'
+            keyAlias 'Notepad_2-key'
+            keyPassword 'qwerty24 humster'
+        }
+    }
     compileSdkVersion 31
     buildToolsVersion "30.0.2"
 
@@ -27,6 +35,7 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.'main sign'
         }
     }
     compileOptions {
@@ -37,9 +46,8 @@ android {
 
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.4.1'
-    implementation 'com.google.android.material:material:1.6.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.3'
-    testImplementation 'junit:junit:'
+    implementation 'com.google.android.material:material:1.6.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
 }
