@@ -11,17 +11,17 @@
     <string name="btn_menu_help">Папка \'Помощь\'</string>
     <string name="action_save">Сохранить</string>
     <string name="action_rollback">Откатить назад</string>
-    <string name="action_rollforward">Вернуть сохраненное</string>
+    <string name="action_rollforward">Вернуть сохранённое</string>
     <string name="create_item_text">Создание</string>
     <string name="edit_item_text">Изменение</string>
-    <string name="error_bad_path">Не существующий путь \'%s\'</string>
+    <string name="error_bad_path">Несуществующий путь \'%s\'</string>
     <string name="error_file2folder">Невозможно создать папку, файл с тем же именем существует: \'%s\'</string>
     <string name="error_folder2file">Невозможно записывать в папку: \'%s\'</string>
-    <string name="error_read_existence">Невозможно читать: файл \'%s\' не существует</string>
+    <string name="error_read_existence">Файл не существует: \'%s\', невозможно читать</string>
     <string name="error_move_dest">Конечная папка перемещения \'%s\' внутри перемещаемого объекта \'%s\'</string>
-    <string name="error_move_file">Невозможно переместить в файл \'%s\'</string>
-    <string name="error_rename_exists">Невозможно переместить / переименовать: файл \'%s\' уже существует.</string>
+    <string name="error_move_file">Невозможно переместить в файл: \'%s\'</string>
+    <string name="error_rename_exists">Файл уже существует: \'%s\', невозможно переместить / переименовать</string>
     <string name="error_folder_to_script">Невозможно конвертировать папку \'%s\' в текст / скрипт</string>
-    <string name="error_run_nofile">Невозможно запустить \'%s\' - не файл</string>
+    <string name="error_run_nofile">Невозможно запустить \'%s\' - папку</string>
     <string name="folder_help_name">Help-ru</string>
 </resources>

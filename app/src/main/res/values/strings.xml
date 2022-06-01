@@ -29,13 +29,13 @@
     <string name="error_bad_path">Non existent path \'%s\'</string>
     <string name="error_file2folder">Could not mkdir, file with the same name exists: \'%s\'</string>
     <string name="error_folder2file">Could not write to folder: \'%s\'</string>
-    <string name="error_read_existence">Could not read: file \'%s\' does not exist</string>
+    <string name="error_read_existence">File does not exist: \'%s\', could not read</string>
     <string name="error_move_dest">move dest \'%s\' is in moving object \'%s\'</string>
     <string name="error_move_file">Could not move to file \'%s\'</string>
 
-    <string name="error_rename_exists">Could not move / rename: file \'%s\' already exists</string>
+    <string name="error_rename_exists">File already exists: \'%s\', could not move / rename</string>
     <string name="error_folder_to_script">Could not convert folder \'%s\' to text / script</string>
-    <string name="error_run_nofile">Could not run \'%s\' - not file</string>
+    <string name="error_run_nofile">Could not run \'%s\' - folder</string>
     <string name="folder_help_name">Help-en</string>
 
 </resources>
