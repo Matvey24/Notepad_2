@@ -6,9 +6,6 @@ import android.os.Looper;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.matvey.perelman.notepad2.database.DatabaseElement;
-import com.matvey.perelman.notepad2.list.ElementType;
-
-import java.util.ArrayList;
 import java.util.concurrent.CyclicBarrier;
 
 public class DatabaseCursor implements IDListener {
@@ -50,6 +47,8 @@ public class DatabaseCursor implements IDListener {
             return true;
         } else {
             path_id = conn.getParent(path_id);
+            if(path_id == -1)
+                path_id = 0;
             updatePath();
             reloadData();
             listener.onPathChanged();

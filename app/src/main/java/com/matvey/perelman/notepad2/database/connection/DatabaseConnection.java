@@ -69,7 +69,7 @@ public class DatabaseConnection {
 
     public void getElement(long id, DatabaseElement save_to){
         single_param[0] = String.valueOf(id);
-        Cursor c = db.rawQuery("SELECT parent, name, type, substr(content, 0, 50) FROM main WHERE ID == ?", single_param);
+        Cursor c = db.rawQuery("SELECT parent, name, type, substr(content, 0, 64) FROM main WHERE ID == ?", single_param);
         if(c.getCount() != 0){
             c.moveToPosition(0);
             save_to.id = id;

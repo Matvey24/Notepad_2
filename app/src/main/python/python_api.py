@@ -8,6 +8,8 @@ from io import StringIO
 import json
 from functools import wraps
 
+
+
 def __java_api_make_dict():
     return {}
 
@@ -40,7 +42,7 @@ class Executor:
             code_object = compile(code, filename, 'exec')
             exec(code_object, glob)
         except Exception as ex:
-            self.api.toast(str(ex), True)
+            self.api.toast(repr(ex), True)
             traceback.print_exc()
 
         out = saved_stdout.getvalue()
@@ -114,11 +116,9 @@ class API:
     def exists(self, path: str) -> bool:
         return self.executor.exists(path)
 
-    @simple_exceptions
     def is_folder(self, path: str) -> bool:
         return self.get_type(path) == Type.FOLDER
 
-    @simple_exceptions
     def is_script(self, path: str) -> bool:
         return self.get_type(path) == Type.SCRIPT
 
