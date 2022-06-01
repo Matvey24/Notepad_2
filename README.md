@@ -4,7 +4,7 @@
 ![Chaquopy](https://img.shields.io/badge/Chaquopy-12.0.0-blue)
 ![Python](https://img.shields.io/badge/python-3.8-blue)
 ![APK_SIZE](https://img.shields.io/github/size/Matvey24/Notepad_2/app/release/app-release.apk?label=APK-release)
-![Lines]()
+
 **Notepad 2** is application for Android, notes, which allows writing scripts on python to do some specific tasks.
 
 For example:
