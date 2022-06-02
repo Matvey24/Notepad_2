@@ -47,8 +47,6 @@ public class DatabaseCursor implements IDListener {
             return true;
         } else {
             path_id = conn.getParent(path_id);
-            if(path_id == -1)
-                path_id = 0;
             updatePath();
             reloadData();
             listener.onPathChanged();
@@ -124,10 +122,30 @@ public class DatabaseCursor implements IDListener {
 
     @Override
     public void onPathRenamed() {
-        context.runOnUiThread(() -> {
+        if(Thread.currentThread() == Looper.getMainLooper().getThread()){
             updatePath();
             listener.onPathRenamed();
-        });
+        }else {
+            context.runOnUiThread(() -> {
+                updatePath();
+                listener.onPathRenamed();
+                await();
+            });
+            await();
+        }
+    }
+
+    @Override
+    public void onPathChanged(long to_id) {
+        if(Thread.currentThread() == Looper.getMainLooper().getThread()){
+            enterUI(to_id);
+        }else {
+            context.runOnUiThread(() -> {
+                enterUI(to_id);
+                await();
+            });
+            await();
+        }
     }
 
     private void await() {

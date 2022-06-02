@@ -5,5 +5,6 @@ public interface IDListener {
     void onDeleteItem(long id);
     void onChangeItem(long id);
     void onPathRenamed();
+    void onPathChanged(long to_id);
     long getPathID();
 }

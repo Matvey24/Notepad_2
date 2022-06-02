@@ -47,10 +47,13 @@ class Executor:
 
         out = saved_stdout.getvalue()
         err = saved_stderr.getvalue()
-        if len(out) != 0:
-            self.api.write('out.txt', out)
-        if len(err) != 0:
-            self.api.write('err.txt', err)
+        try:
+            if len(out) != 0:
+                self.api.write('out.txt', out)
+            if len(err) != 0:
+                self.api.write('err.txt', err)
+        except:
+            pass
 
         saved_stdout.close()
         saved_stderr.close()

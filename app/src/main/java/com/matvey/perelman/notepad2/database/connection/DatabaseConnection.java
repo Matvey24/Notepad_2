@@ -60,10 +60,17 @@ public class DatabaseConnection {
                 listener.onPathRenamed();
         }
     }
-    private void onDeleteItem(long parent, long id){
+    private void onDeleteView(long parent, long id){
         for(IDListener listener: cursors){
             if(parent == listener.getPathID())
                 listener.onDeleteItem(id);
+        }
+    }
+    private void onDeleteItem(long parent, long id){
+        onDeleteView(parent, id);
+        for(IDListener listener: cursors){
+            if(!exists(listener.getPathID()))
+                listener.onPathChanged(parent);
         }
     }
 
@@ -94,7 +101,7 @@ public class DatabaseConnection {
     }
     public Cursor getListFiles(long folder_id){
         single_param[0] = String.valueOf(folder_id);
-        return db.rawQuery("SELECT ID, name, type, substr(content, 0, 50) FROM main WHERE parent == ? AND ID != 0 ORDER BY name", single_param);
+        return db.rawQuery("SELECT ID, name, type, substr(content, 0, 64) FROM main WHERE parent == ? AND ID != 0 ORDER BY name", single_param);
     }
     public long getID(long parent, String item){
         double_param[0] = String.valueOf(parent);
@@ -108,6 +115,13 @@ public class DatabaseConnection {
             id = -1;
         c.close();
         return id;
+    }
+    private boolean exists(long id){
+        single_param[0] = String.valueOf(id);
+        Cursor c = db.rawQuery("SELECT ID FROM main WHERE ID = ?", single_param);
+        boolean b = c.getCount() != 0;
+        c.close();
+        return b;
     }
     public String getName(long id){
         single_param[0] = String.valueOf(id);
@@ -207,7 +221,7 @@ public class DatabaseConnection {
         st.bindLong(1, new_parent);
         st.bindLong(2, id);
         st.execute();
-        onDeleteItem(old_parent, id);
+        onDeleteView(old_parent, id);
         onNewItem(new_parent, id);
         onChangeName(new_parent);
     }
