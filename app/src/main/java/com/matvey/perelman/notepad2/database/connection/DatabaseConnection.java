@@ -101,7 +101,8 @@ public class DatabaseConnection {
     }
     public Cursor getListFiles(long folder_id){
         single_param[0] = String.valueOf(folder_id);
-        return db.rawQuery("SELECT ID, name, type, substr(content, 0, 64) FROM main WHERE parent == ? AND ID != 0 ORDER BY name", single_param);
+//        return db.rawQuery("SELECT ID, name, type, substr(content, 0, 64) FROM main WHERE parent == ? AND ID != 0 ORDER BY name", single_param);
+        return db.rawQuery("SELECT ID, name, type, substr(content, 0, 64) FROM main WHERE ID != 0 ORDER BY name", null);
     }
     public long getID(long parent, String item){
         double_param[0] = String.valueOf(parent);
