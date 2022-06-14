@@ -16,6 +16,8 @@ For example:
 ## Installation
 Install the [stable release version](https://github.com/Matvey24/Notepad_2/raw/master/app/release/app-release.apk) by downloading apk from this GitHub.
 
+Install the app from [Google Play](https://play.google.com/store/apps/details?id=com.matvey.perelman.notepad2).
+
 ## Reinstallation
-If you have the app installed, and you want to install another version of the app, your device can tell you, that no data would be deleted by reinstallation.
-But if your device does not tell you this, before reinstallation copy the app data you want to save into clipboard using `api.to_json(folder)` and copying the result, so you can reinstall the app without data loss (you need to extract this using `api.from_json(text)`)
+If you have the app installed, and you want to install another version of the app (debug <-> release, github <-> google play), your device can tell you, that no data would be deleted by reinstallation.
+But if your device does not tell you this, before reinstallation copy the app data you want to save into clipboard using `api.to_json(folder)` and copying the result, so you can reinstall the app without data loss. You need to extract this text using `api.from_json(text)`.
