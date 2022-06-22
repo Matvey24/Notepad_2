@@ -24,4 +24,5 @@
     <string name="error_folder_to_script">Невозможно конвертировать папку \'%s\' в текст / скрипт</string>
     <string name="error_run_nofile">Невозможно запустить \'%s\' - папку</string>
     <string name="folder_help_name">Help-ru</string>
+    <string name="error_stopped_input">Невозможно открыть диалог ввода, пока активити остановлена</string>
 </resources>

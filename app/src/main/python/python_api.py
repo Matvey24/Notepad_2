@@ -32,6 +32,9 @@ class Executor:
         self.api = API(executor, activity)
         self.space = space
 
+    def add_param(self, name: str, param):
+        self.space[name] = param
+
     def run_code(self, filename: str, code: str):
         saved_stdout = StringIO()
         saved_stderr = StringIO()
@@ -52,8 +55,8 @@ class Executor:
                 self.api.write('out.txt', out)
             if len(err) != 0:
                 self.api.write('err.txt', err)
-        except:
-            pass
+        except Exception as ex:
+            self.api.toast(f'Internal error writing out.txt or err.txt: {repr(ex)}', True)
 
         saved_stdout.close()
         saved_stderr.close()
@@ -137,6 +140,7 @@ class API:
     def move(self, path_cut: str, path_paste: str):
         self.executor.move(path_cut, path_paste)
 
+    @simple_exceptions
     def input(self, input_name = 'input') -> str:
         return self.activity.showInputDialog(input_name)
 

@@ -21,11 +21,13 @@ public class InputDialog extends DialogFragment {
     private TextInputEditText input_text;
     private MainActivity activity;
     private String input_name;
-    public static InputDialog createInstance(MainActivity activity){
+    private boolean just_started;
+    public static InputDialog createInstance(MainActivity activity) {
         InputDialog dialog = new InputDialog();
         dialog.activity = activity;
         return dialog;
     }
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -41,20 +43,29 @@ public class InputDialog extends DialogFragment {
     }
 
     @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        just_started = true;
+    }
+
+    @Override
     public void onStart() {
         super.onStart();
+        if(!just_started)
+            return;
+        just_started = false;
         layout.setHint(input_name);
         input_text.setText("");
     }
 
     @Override
-    public void onStop() {
-        super.onStop();
+    public void onDestroy() {
+        super.onDestroy();
         activity.ui_barrier_wait();
-        if(!isHidden())
+        if (!isHidden()) {
             dismiss();
+        }
     }
-
     public void start(String input_name) {
         this.input_name = input_name;
         super.show(activity.getSupportFragmentManager(), "input");

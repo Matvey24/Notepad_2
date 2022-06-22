@@ -31,13 +31,12 @@ public class CreatorDialog extends DialogFragment {
     private RadioButton btn_executable;
     private TextInputLayout layout;
     private TextInputEditText name_text;
-    private Button btn_create;
     private ImageButton btn_delete;
     private ImageButton btn_cut;
     private MainActivity activity;
     public CreatorElement element;
     private boolean editing;
-
+    private boolean just_started;
     private long parent;
     private boolean paste_available;
 
@@ -57,7 +56,7 @@ public class CreatorDialog extends DialogFragment {
         btn_executable = view.findViewById(R.id.rbtn_executable);
         layout = view.findViewById(R.id.name_layout);
         name_text = layout.findViewById(R.id.name_text);
-        btn_create = view.findViewById(R.id.btn_create);
+        Button btn_create = view.findViewById(R.id.btn_create);
         btn_delete = view.findViewById(R.id.btn_delete);
         btn_cut = view.findViewById(R.id.btn_cut);
         tv_dialog_name = view.findViewById(R.id.tv_dialog_name);
@@ -124,8 +123,17 @@ public class CreatorDialog extends DialogFragment {
     }
 
     @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        just_started = true;
+    }
+
+    @Override
     public void onStart() {
         super.onStart();
+        if(!just_started)
+            return;
+        just_started = false;
         if(editing){
             setChecked();
             tv_dialog_name.setText(R.string.edit_item_text);

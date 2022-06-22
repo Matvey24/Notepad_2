@@ -12,6 +12,7 @@ import com.matvey.perelman.notepad2.list.Adapter;
 import com.matvey.perelman.notepad2.creator.CreatorDialog;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -128,7 +129,6 @@ public class MainActivity extends AppCompatActivity {
         editor.putBoolean("ask_before_delete", adapter.ask_before_delete);
         editor.apply();
     }
-
     public void makeToast(String text, boolean lon){
         runOnUiThread(()-> Toast.makeText(this, text, lon?Toast.LENGTH_LONG:Toast.LENGTH_SHORT).show());
     }
@@ -142,7 +142,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        adapter.runAsync("/settings/onActivityResult", "requestCode", requestCode, "resultCode", resultCode, "data", data);
+    }
+
     public synchronized String showInputDialog(String input_name){
+        if(isStopped)
+            throw new RuntimeException(getString(R.string.error_stopped_input));
         if(barrier == null)
             barrier = new CyclicBarrier(2);
         runOnUiThread(()->{
@@ -180,11 +188,13 @@ public class MainActivity extends AppCompatActivity {
     }
     @Override
     public void onDestroy() {
+        saveState();
+        if(barrier == null)
+            barrier = new CyclicBarrier(2);
+        adapter.onClose();
         creator_dialog.onDestroy();
         if(input_dialog != null)
             input_dialog.onDestroy();
-        saveState();
-        adapter.onClose();
         super.onDestroy();
     }
 }

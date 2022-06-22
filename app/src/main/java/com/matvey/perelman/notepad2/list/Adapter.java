@@ -85,6 +85,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
             if (!Python.isStarted())
                 Python.start(new AndroidPlatform(main_activity));
             space = Python.getInstance().getModule("python_api").callAttr("__java_api_make_dict");
+            runRunnable("/settings/onCreate");
         });
     }
 
@@ -141,7 +142,20 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
             freeExecutor(e);
         });
     }
-
+    public void runAsync(String filepath, Object... params){
+        tasks.runTask(()->{
+            runRunnable(filepath, params);
+        });
+    }
+    public void runRunnable(String filepath, Object... params){
+        Executor e = allocExecutor();
+        try {
+            for(int i = 0; i < params.length / 2; ++i)
+                e.addParam(params[2 * i].toString(), params[2 * i + 1]);
+            e.begin(filepath);
+        }catch (RuntimeException ignored){}
+        freeExecutor(e);
+    }
     public void quick_new_note() {
         CreatorElement celement = new CreatorElement();
         celement.setType(ElementType.TEXT);
@@ -236,6 +250,11 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
     }
 
     public void onClose() {
+        tasks.runTask(()->{
+            runRunnable("/settings/onDestroy");
+            main_activity.th_barrier_await();
+        });
+        main_activity.th_barrier_await();
         tasks.runTask(connection::close);
         tasks.disposeOnFinish();
     }
