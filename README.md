@@ -16,7 +16,9 @@ For example:
 ## Installation
 Install the [stable release version](https://github.com/Matvey24/Notepad_2/raw/master/app/release/app-release.apk) by downloading apk from this GitHub.
 
-Install the app from [Google Play](https://play.google.com/store/apps/details?id=com.matvey.perelman.notepad2).
+Install the [debug version](https://github.com/Matvey24/Notepad_2/raw/master/app/build/outputs/apk/debug/app-debug.apk).
+
+Or install the app from [Google Play](https://play.google.com/store/apps/details?id=com.matvey.perelman.notepad2).
 
 ## Reinstallation
 If you have the app installed, and you want to install another version of the app (debug <-> release, github <-> google play), your device can tell you, that no data would be deleted by reinstallation.
