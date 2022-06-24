@@ -90,7 +90,7 @@ public class DatabaseConnection {
             save_to.id = -1;
         c.close();
     }
-    public void getElement(Cursor list, DatabaseElement save_to, long parent, int idx){
+    public static void getElement(Cursor list, DatabaseElement save_to, long parent, int idx){
         list.moveToPosition(idx);
         save_to.id = list.getLong(0);
         save_to.parent = parent;

@@ -81,8 +81,10 @@ public class EditorActivity extends AppCompatActivity {
             String text = text_editor.getText().toString();
             while (versions.size() - 1 > position)
                 versions.remove(versions.size() - 1);
-            versions.add(text);
-            position = versions.size() - 1;
+            if(!versions.get(position).equals(text)) {
+                versions.add(text);
+                position = versions.size() - 1;
+            }
             btn_save.setTitle(getString(R.string.action_save) + " (" + position + ")");
             btn_rollback.setTitle(getString(R.string.action_rollback) + " (" + position + ")");
             save_changed = false;

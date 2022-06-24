@@ -1,7 +1,6 @@
 package com.matvey.perelman.notepad2.list;
 
 import android.content.res.Resources;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
@@ -39,7 +38,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
     private PyObject space;
     public String path_to_cut;
 
-    public Adapter(MainActivity main_activity, long path) {
+    public Adapter(MainActivity main_activity, long path, boolean onStartInBackground) {
         connection = new DatabaseConnection(main_activity);
 
         cursor = connection.makeCursor(new ViewListener() {
@@ -83,12 +82,17 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
         this.main_activity = main_activity;
         tasks = new Tasks(Integer.MAX_VALUE);
         executors = new Stack<>();
-        tasks.runTask(() -> {
-            if (!Python.isStarted())
-                Python.start(new AndroidPlatform(main_activity));
-            space = Python.getInstance().getModule("python_api").callAttr("__java_api_make_dict");
-            runStart();
-        });
+        if(onStartInBackground)
+            tasks.runTask(this::pythonStart);
+        else
+            pythonStart();
+    }
+
+    private void pythonStart(){
+        if (!Python.isStarted())
+            Python.start(new AndroidPlatform(main_activity));
+        space = Python.getInstance().getModule("python_api").callAttr("__java_api_make_dict");
+        runStart();
     }
 
     public void onClickDelete(String name, long parent, long id) {

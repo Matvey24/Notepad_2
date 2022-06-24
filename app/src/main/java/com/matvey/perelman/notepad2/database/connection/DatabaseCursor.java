@@ -32,7 +32,7 @@ public class DatabaseCursor implements IDListener {
     }
 
     public void getElement(DatabaseElement saveTo, int idx) {
-        conn.getElement(vis_files, saveTo, path_id, idx);
+        DatabaseConnection.getElement(vis_files, saveTo, path_id, idx);
     }
 
     public void enterUI(long normal_id) {
@@ -171,7 +171,6 @@ public class DatabaseCursor implements IDListener {
     private void uiOnChangeItem(long id){
         int idx1 = indexOf(id);
         reloadData();
-        int len2 = length();
         int idx2 = indexOf(id);
         if (idx1 == -1 && idx2 == -1)
             return;

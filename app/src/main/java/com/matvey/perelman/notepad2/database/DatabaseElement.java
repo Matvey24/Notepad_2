@@ -7,13 +7,4 @@ public class DatabaseElement {
     public String name;
     public String content;
     public ElementType type;
-
-    @Override
-    public String toString() {
-        return "{" +
-                "name='" + name + '\'' +
-                ", preview='" + content + '\'' +
-                ", type=" + type +
-                '}';
-    }
 }

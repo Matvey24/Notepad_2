@@ -10,7 +10,7 @@
 
     <string name="content">Content</string>
 
-    <string name="empty_folder_view">Folder %s is empty!</string>
+    <string name="empty_folder_view">Folder is empty: %s!</string>
 
     <string name="param_ask_delete">Ask before delete</string>
     <string name="ask_delete">Delete %s?</string>
@@ -37,6 +37,6 @@
     <string name="error_folder_to_script">Could not convert folder \'%s\' to text / script</string>
     <string name="error_run_nofile">Could not run \'%s\' - folder</string>
     <string name="folder_help_name">Help-en</string>
-    <string name="error_stopped_input">Could not open input dialog while activity is stopped</string>
+    <string name="error_stopped_input">Could not open input dialog while activity is not on display</string>
 
 </resources>

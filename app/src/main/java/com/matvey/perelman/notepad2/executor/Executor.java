@@ -54,13 +54,14 @@ public class Executor implements AutoCloseable {
         vis_folder = 0;
         py_executor.callAttr("from_json", json, "/");
     }
-
+    @SuppressWarnings("UnusedDeclaration")
     public String getScriptPath() {
         return filepath;
     }
     public String getPath() {
         return conn.buildPath(vis_folder);
     }
+    @SuppressWarnings("UnusedDeclaration")
     public String getScriptName(){
         return getName(filepath);
     }
@@ -142,9 +143,6 @@ public class Executor implements AutoCloseable {
         }
         return last;
     }
-    public void cdGoId(long fold){
-        curr_path = fold;
-    }
     //go to the folder
     public void cdGo(String path, ArrayList<String> arr, boolean make_dir){
         if(arr.size() == 0){
@@ -189,7 +187,7 @@ public class Executor implements AutoCloseable {
         celement.parent = curr_path;
         return conn.newElement(celement);
     }
-
+    @SuppressWarnings("UnusedDeclaration")
     public void touch(String tpath) {
         String entry = cdGoEntry(tpath, Executor.parsePath(tpath), true);
         long id = conn.getID(curr_path, entry);
@@ -205,7 +203,7 @@ public class Executor implements AutoCloseable {
         else if (conn.getType(id) != ElementType.FOLDER)
             throw new RuntimeException(activity.getString(R.string.error_file2folder, dir));
     }
-
+    @SuppressWarnings("UnusedDeclaration")
     public boolean delete(String path) {
         String entry = cdGoEntry(path, Executor.parsePath(path), false);
         long id = conn.getID(curr_path, entry);
@@ -216,7 +214,7 @@ public class Executor implements AutoCloseable {
             return true;
         }
     }
-
+    @SuppressWarnings("UnusedDeclaration")
     public void write(String fpath, String content) {
         String file = cdGoEntry(fpath, Executor.parsePath(fpath), true);
         long id = conn.getID(curr_path, file);
@@ -230,7 +228,7 @@ public class Executor implements AutoCloseable {
         delement.content = content;
         conn.updateTextData(delement);
     }
-
+    @SuppressWarnings("UnusedDeclaration")
     public String read(String fpath) {
         String file = cdGoEntry(fpath, Executor.parsePath(fpath), false);
         long id = conn.getID(curr_path, file);
@@ -238,7 +236,7 @@ public class Executor implements AutoCloseable {
             throw new RuntimeException(activity.getString(R.string.error_read_existence, file));
         return conn.getContent(id);
     }
-
+    @SuppressWarnings("UnusedDeclaration")
     public void script(String fpath, boolean mode) {
         String file = cdGoEntry(fpath, Executor.parsePath(fpath), true);
         long id = conn.getID(curr_path, file);
@@ -257,24 +255,18 @@ public class Executor implements AutoCloseable {
             conn.updateElement(celement);
         }
     }
-
-    public ArrayList<DatabaseElement> listFiles(String dpath) {
+    @SuppressWarnings("UnusedDeclaration")
+    public Cursor listFiles(String dpath) {
         cdGo(dpath, Executor.parsePath(dpath), false);
-        ArrayList<DatabaseElement> list = new ArrayList<>();
-        Cursor cursor = conn.getListFiles(curr_path);
-        for (int i = 0; i < cursor.getCount(); ++i) {
-            DatabaseElement de = new DatabaseElement();
-            conn.getElement(cursor, de, curr_path, i);
-            list.add(de);
-        }
-        return list;
+        return conn.getListFiles(curr_path);
     }
 
+    @SuppressWarnings("UnusedDeclaration")
     public boolean exists(String path) {
         String entry = cdGoEntry(path, Executor.parsePath(path), false);
         return conn.getID(curr_path, entry) != -1;
     }
-
+    @SuppressWarnings("UnusedDeclaration")
     public ElementType getType(String path) {
         try {
             String entry = cdGoEntry(path, Executor.parsePath(path), false);
@@ -301,7 +293,7 @@ public class Executor implements AutoCloseable {
             }
         }
     }
-
+    @SuppressWarnings("UnusedDeclaration")
     public void rename(String epath, String name2) {
         String name1 = cdGoEntry(epath, Executor.parsePath(epath), false);
 
@@ -321,9 +313,9 @@ public class Executor implements AutoCloseable {
 
     public String getName(String path) {
         ArrayList<String> p = parsePath(path);
-        if (p.get(p.size() - 1).equals("..")) {
+        if (p.size() == 0 || p.get(p.size() - 1).equals(".."))
             return cdGoEntry(path, p, false);
-        } else
+        else
             return p.get(p.size() - 1);
     }
 
@@ -351,6 +343,7 @@ public class Executor implements AutoCloseable {
             throw new RuntimeException(getString(R.string.error_rename_exists, path_concat(path_paste, name)));
         conn.updateParent(from_id, from_dir, to_dir);
     }
+    @SuppressWarnings("UnusedDeclaration")
     public void run(String path){
         String entry = cdGoEntry(path, parsePath(path), false);
         long id = conn.getID(curr_path, entry);
@@ -359,6 +352,7 @@ public class Executor implements AutoCloseable {
         else
             throw new RuntimeException(getString(R.string.error_run_nofile, path));
     }
+    @SuppressWarnings("UnusedDeclaration")
     public void cd(String dpath){
         cdGo(dpath, parsePath(dpath), true);
         vis_folder = curr_path;

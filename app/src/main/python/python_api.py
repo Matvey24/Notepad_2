@@ -1,8 +1,8 @@
-from com.matvey.perelman.notepad2.list import ElementType as Type
 from com.matvey.perelman.notepad2.executor import Executor as JAVAExecutor
 from java.lang import RuntimeException
 import sys
 import traceback
+import enum
 from io import StringIO
 
 import json
@@ -27,6 +27,13 @@ def simple_exceptions(func):
     
     return wrapper
 
+
+class Type(enum.Enum):
+    FOLDER = 0
+    TEXT = 1
+    SCRIPT = 2
+
+
 class Executor:
     def __init__(self, executor, activity, space):
         self.api = API(executor, activity)
@@ -37,7 +44,7 @@ class Executor:
         saved_stderr = StringIO()
         sys.stdout = saved_stdout
         sys.stderr = saved_stderr
-        glob = {'traceback': traceback, 'json': json, 'api': self.api, 'Type': Type, 'input': self.api.input, 'space': self.space}
+        glob = {'traceback': traceback, 'json': json, 'api': self.api, 'Type':Type, 'input': self.api.input, 'space': self.space}
         try:
             code_object = compile(code, filename, 'exec')
             exec(code_object, glob)
@@ -127,11 +134,18 @@ class API:
 
     @simple_exceptions
     def get_type(self, path: str) -> Type:
-        return self.executor.getType(path)
+        return Type(self.executor.getType(path).ordinal())
 
     @simple_exceptions
-    def list_files(self, dpath: str):
-        return self.executor.listFiles(dpath)
+    def list_files(self, dpath: str) -> list:
+        cursor = self.executor.listFiles(dpath)
+        l = []
+        for i in range(cursor.getCount()):
+            cursor.moveToPosition(i)
+            l.append({'name': cursor.getString(1), 'type': Type(cursor.getInt(2)), 'content': cursor.getString(3)})
+
+        cursor.close()
+        return l
 
     @simple_exceptions
     def move(self, path_cut: str, path_paste: str):
@@ -157,23 +171,22 @@ class API:
         try:
             name = self.get_name(path)
             self.cd(self.path_concat(path, ".."))
-            d = self.__to_py_req(name)
+            d = self.__to_py_req(name, self.get_type(name).value)
         finally:
             self.cd(p)
 
         return d
 
-    def __to_py_req(self, name: str) -> dict:
+    def __to_py_req(self, name: str, type: int) -> dict:
         if not self.is_folder(name):
-            return {'n': name, 't': self.get_type(name).ordinal(), 'c': self.read(name)}
+            return {'n': name, 't': type, 'c': self.read(name)}
 
         self.cd(name)
-        list = self.list_files('.')
-        l = []
-        for i in range(list.size()):
-            l.append(self.__to_py_req(list.get(i).name))
+        l = self.list_files('.')
+        for i in range(len(l)):
+            l[i] = self.__to_py_req(l[i]['name'], l[i]['type'].value)
         self.cd('..')
-        return {'n': name, 't': Type.FOLDER.ordinal(), 'f': l}
+        return {'n': name, 't': type, 'f': l}
 
     def from_py(self, d: dict, path: str = '.', replace = True):
         if type(d) != dict:
@@ -190,9 +203,9 @@ class API:
             self.cd(p)
 
     def __from_py_req(self, d: dict):
-        if d['t'] != Type.FOLDER.ordinal():
+        if d['t'] != Type.FOLDER.value:
+            self.script(d['n'], d['t'] is Type.SCRIPT.value)
             self.write(d['n'], d['c'])
-            self.script(d['n'], d['t'] == Type.SCRIPT.ordinal())
             return
 
         self.cd(d['n'])

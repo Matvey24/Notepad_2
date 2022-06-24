@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
     private Menu menu;
     public CreatorDialog creator_dialog;
 
-    private boolean isStopped;
+    private boolean isStopped = true;
 
     private ActivityResultLauncher<Intent> editor_launcher;
 
@@ -49,8 +49,13 @@ public class MainActivity extends AppCompatActivity {
         root_layout = findViewById(R.id.root_layout);
         super.setTitle(null);
         title = findViewById(R.id.toolbar_title);
+        //load sp
+        SharedPreferences sp = getSharedPreferences("saved_state", Context.MODE_PRIVATE);
+        boolean ask_before_delete = sp.getBoolean("ask_before_delete", true);
+        boolean onStartInBackground = sp.getBoolean("on_start_in_background", true);
         //recycler view
-        adapter = new Adapter(this, 0);
+        adapter = new Adapter(this, 0, onStartInBackground);
+        adapter.ask_before_delete = ask_before_delete;
         RecyclerView rv = findViewById(R.id.list_view);
         rv.setLayoutManager(new LinearLayoutManager(this));
         rv.setAdapter(adapter);
@@ -66,9 +71,6 @@ public class MainActivity extends AppCompatActivity {
             adapter.quick_new_note();
             return true;
         });
-        //load delete info
-        SharedPreferences sp = getSharedPreferences("saved_state", Context.MODE_PRIVATE);
-        adapter.ask_before_delete = sp.getBoolean("ask_before_delete", true);
 
         //editor launcher
         editor_launcher = registerForActivityResult(
@@ -77,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
                     long id = result.getData().getLongExtra("id", -1);
                     adapter.cursor.onChangeItem(id);
                 });
+
     }
 
     @Override
@@ -85,6 +88,12 @@ public class MainActivity extends AppCompatActivity {
         this.menu = menu;
         menu.getItem(0).setChecked(adapter.ask_before_delete);
         return true;
+    }
+    @SuppressWarnings("UnusedDeclaration")
+    public void onStartInBackground(boolean straight){
+        SharedPreferences.Editor editor = getSharedPreferences("saved_state", Context.MODE_PRIVATE).edit();
+        editor.putBoolean("on_start_in_background", straight);
+        editor.apply();
     }
 
     @Override
@@ -123,7 +132,7 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
         isStopped = false;
     }
-
+    @SuppressWarnings("UnusedDeclaration")
     public synchronized String showInputDialog(String input_name) {
         if (isStopped)
             throw new RuntimeException(getString(R.string.error_stopped_input));
