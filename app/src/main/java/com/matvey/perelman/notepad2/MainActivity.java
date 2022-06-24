@@ -67,7 +67,8 @@ public class MainActivity extends AppCompatActivity {
             return true;
         });
         //load delete info
-        loadState();
+        SharedPreferences sp = getSharedPreferences("saved_state", Context.MODE_PRIVATE);
+        adapter.ask_before_delete = sp.getBoolean("ask_before_delete", true);
 
         //editor launcher
         editor_launcher = registerForActivityResult(
@@ -88,9 +89,12 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        item.setChecked(!item.isChecked());
         if (item == menu.getItem(0)) {
+            item.setChecked(!item.isChecked());
             adapter.ask_before_delete = item.isChecked();
+            SharedPreferences.Editor editor = getSharedPreferences("saved_state", Context.MODE_PRIVATE).edit();
+            editor.putBoolean("ask_before_delete", adapter.ask_before_delete);
+            editor.apply();
         } else if (item == menu.getItem(1)) {
             adapter.goHelp();
         }
@@ -104,21 +108,10 @@ public class MainActivity extends AppCompatActivity {
         editor_launcher.launch(intent);
     }
 
-    public void loadState() {
-        SharedPreferences sp = getSharedPreferences("saved_state", Context.MODE_PRIVATE);
-        adapter.ask_before_delete = sp.getBoolean("ask_before_delete", true);
-    }
-
     public void hideKeyboard() {
         InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
         imm.hideSoftInputFromWindow(root_layout.getRootView().getWindowToken(), 0);
         root_layout.getRootView().clearFocus();
-    }
-
-    public void saveState() {
-        SharedPreferences.Editor editor = getSharedPreferences("saved_state", Context.MODE_PRIVATE).edit();
-        editor.putBoolean("ask_before_delete", adapter.ask_before_delete);
-        editor.apply();
     }
 
     public void makeToast(String text, boolean len) {
@@ -176,7 +169,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onDestroy() {
-        saveState();
         creator_dialog.onDestroy();
         if (input_dialog != null)
             input_dialog.onDestroy();
