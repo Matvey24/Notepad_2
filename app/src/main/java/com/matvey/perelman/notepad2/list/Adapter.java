@@ -149,9 +149,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
         Executor e = allocExecutor();
         try {
             e.begin(filepath);
-        }catch (RuntimeException ex){
-            Log.e("Matvey24", ex.toString());
-        }
+        }catch (RuntimeException ignored){}
         freeExecutor(e);
     }
 

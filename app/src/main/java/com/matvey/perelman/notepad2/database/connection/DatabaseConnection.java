@@ -35,10 +35,6 @@ public class DatabaseConnection {
         cursors.add(cursor);
         return cursor;
     }
-    public void deleteCursor(DatabaseCursor cursor){
-        cursors.remove(cursor);
-        cursor.close();
-    }
     public void close(){
         for(DatabaseCursor c: cursors)
             c.close();
