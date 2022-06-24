@@ -13,6 +13,8 @@ public class Tasks {
 
     private boolean disposeOnFinish;
 
+    public Runnable finalTask = null;
+
     public Tasks() {
         this(1);
     }
@@ -23,7 +25,6 @@ public class Tasks {
         workers = new ArrayList<>();
         freeWorkers = new Stack<>();
     }
-
     public synchronized void runTask(Runnable task) {
         queue.add(task);
         if (freeWorkers.empty() && workers.size() != threadCount) {
@@ -53,11 +54,13 @@ public class Tasks {
         if (!queue.isEmpty()) return queue.remove();
         return null;
     }
-
     synchronized void onFinish(ThreadWorker worker) {
         freeWorkers.push(worker);
-        if (disposeOnFinish && isFinished()) {
-            dispose(worker);
+        if (isFinished()) {
+            if(finalTask != null)
+                finalTask.run();
+            if(disposeOnFinish)
+                dispose(worker);
         }
     }
 
@@ -69,9 +72,6 @@ public class Tasks {
                 w.dispose();
             }
         }
-    }
-    public synchronized void clearTasks(){
-        queue.clear();
     }
     public void disposeOnFinish() {
         disposeOnFinish = true;

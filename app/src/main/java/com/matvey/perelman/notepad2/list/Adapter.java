@@ -1,6 +1,7 @@
 package com.matvey.perelman.notepad2.list;
 
 import android.content.res.Resources;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
@@ -38,8 +39,9 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
     private PyObject space;
     public String path_to_cut;
 
-    public Adapter(MainActivity main_activity) {
+    public Adapter(MainActivity main_activity, long path) {
         connection = new DatabaseConnection(main_activity);
+
         cursor = connection.makeCursor(new ViewListener() {
             @Override
             public void onNewItem(int idx) {
@@ -76,7 +78,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
                 notifyDataSetChanged();
             }
 
-        }, main_activity);
+        }, main_activity, path);
 
         this.main_activity = main_activity;
         tasks = new Tasks(Integer.MAX_VALUE);
@@ -85,7 +87,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
             if (!Python.isStarted())
                 Python.start(new AndroidPlatform(main_activity));
             space = Python.getInstance().getModule("python_api").callAttr("__java_api_make_dict");
-            runRunnable("/settings/onCreate");
+            runStart();
         });
     }
 
@@ -142,35 +144,31 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
             freeExecutor(e);
         });
     }
-    public void runAsync(String filepath, Object... params){
-        tasks.runTask(()->{
-            runRunnable(filepath, params);
-        });
-    }
-    public void runRunnable(String filepath, Object... params){
+
+    public void runRunnable(String filepath){
         Executor e = allocExecutor();
         try {
-            for(int i = 0; i < params.length / 2; ++i)
-                e.addParam(params[2 * i].toString(), params[2 * i + 1]);
             e.begin(filepath);
-        }catch (RuntimeException ignored){}
+        }catch (RuntimeException ex){
+            Log.e("Matvey24", ex.toString());
+        }
         freeExecutor(e);
     }
+
     public void quick_new_note() {
         CreatorElement celement = new CreatorElement();
         celement.setType(ElementType.TEXT);
         celement.setName(main_activity.getString(R.string.new_file_text));
         celement.parent = cursor.getPathID();
         long id = connection.newElement(celement);
-        main_activity.start_editor(id, cursor.indexOf(id), connection.getName(id), connection.getContent(id));
+        main_activity.start_editor(id, connection.getName(id));
     }
 
-    public void onClickField(DatabaseElement element, int position) {
+    public void onClickField(DatabaseElement element) {
         if (element.type == ElementType.FOLDER) {
             cursor.enterUI(element.id);
         } else if (element.type == ElementType.TEXT) {
-            String content = connection.getContent(element.id);
-            main_activity.start_editor(element.id, position, element.name, content);
+            main_activity.start_editor(element.id, element.name);
         } else if (element.type == ElementType.SCRIPT) {
             runFile(path_concat(cursor.path_t, element.name), element.parent, element.id);
         }
@@ -248,14 +246,20 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
             return 1;
         return count;
     }
+    private void runStart(){
+        runRunnable("/settings/onStart");
+    }
 
-    public void onClose() {
-        tasks.runTask(()->{
-            runRunnable("/settings/onDestroy");
+    public void close() {
+        if(tasks.isFinished()){
+            connection.close();
+        }else {
+            tasks.finalTask = () -> {
+                connection.close();
+                main_activity.th_barrier_await();
+            };
             main_activity.th_barrier_await();
-        });
-        main_activity.th_barrier_await();
-        tasks.runTask(connection::close);
+        }
         tasks.disposeOnFinish();
     }
 }

@@ -38,13 +38,10 @@ public class Executor implements AutoCloseable {
         vis_folder = 0;
         String entry = cdGoEntry(path, parsePath(path), false);
         long id = conn.getID(curr_path, entry);
-        if(id != -1 && conn.getType(id) != ElementType.FOLDER)
+        if(id != -1 && conn.getType(id) != ElementType.FOLDER) {
             begin(path, id, curr_path);
-        else
+        }else
             throw new RuntimeException(getString(R.string.error_run_nofile, path));
-    }
-    public void addParam(String param_name, Object param){
-        py_executor.callAttr("add_param", param_name, param);
     }
     public void begin(String filepath, long id, long parent) {
         String content = conn.getContent(id);
@@ -279,8 +276,12 @@ public class Executor implements AutoCloseable {
     }
 
     public ElementType getType(String path) {
-        String entry = cdGoEntry(path, Executor.parsePath(path), false);
-        return conn.getType(conn.getID(curr_path, entry));
+        try {
+            String entry = cdGoEntry(path, Executor.parsePath(path), false);
+            return conn.getType(conn.getID(curr_path, entry));
+        }catch (RuntimeException e){
+            return null;
+        }
     }
 
     public static String path_concat(String path1, String path2) {

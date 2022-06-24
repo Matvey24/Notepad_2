@@ -19,12 +19,12 @@ public class DatabaseCursor implements IDListener {
     private final AppCompatActivity context;
     private final CyclicBarrier cb;
 
-    public DatabaseCursor(DatabaseConnection connection, ViewListener listener, AppCompatActivity context) {
+    public DatabaseCursor(DatabaseConnection connection, ViewListener listener, AppCompatActivity context, long path) {
         this.listener = listener;
         this.conn = connection;
         this.context = context;
         cb = new CyclicBarrier(2);
-        setRootPath();
+        setPath(path);
     }
 
     public int length() {
@@ -77,8 +77,8 @@ public class DatabaseCursor implements IDListener {
         return -1;
     }
 
-    public void setRootPath() {
-        path_id = 0;
+    public void setPath(long id) {
+        path_id = id;
         updatePath();
         reloadData();
     }
@@ -171,6 +171,7 @@ public class DatabaseCursor implements IDListener {
     private void uiOnChangeItem(long id){
         int idx1 = indexOf(id);
         reloadData();
+        int len2 = length();
         int idx2 = indexOf(id);
         if (idx1 == -1 && idx2 == -1)
             return;

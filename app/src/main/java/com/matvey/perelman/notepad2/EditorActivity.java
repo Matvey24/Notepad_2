@@ -1,5 +1,6 @@
 package com.matvey.perelman.notepad2;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
@@ -43,12 +44,13 @@ public class EditorActivity extends AppCompatActivity {
 
         Intent intent = getIntent();
         setTitle(intent.getStringExtra("name"));
-        versions.add(intent.getStringExtra("content"));
         id = intent.getLongExtra("id", -1);
 
-        text_editor.setText(versions.get(0));
 
         database = new DatabaseHelper(this).getWritableDatabase();
+        versions.add(DatabaseConnection.getContent(database, id, new String[1]));
+        text_editor.setText(versions.get(0));
+
         text_editor.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -65,6 +67,7 @@ public class EditorActivity extends AppCompatActivity {
                 save_changed = true;
             }
         });
+        setResult(Activity.RESULT_OK, intent);
     }
 
     public void hideKeyboard() {
@@ -133,7 +136,7 @@ public class EditorActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         database.close();
+        super.onDestroy();
     }
 }

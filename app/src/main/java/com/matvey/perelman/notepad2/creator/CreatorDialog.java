@@ -85,7 +85,7 @@ public class CreatorDialog extends DialogFragment {
             if(editing){
                 if(!name.isEmpty()) {
                     element.updateName(name);
-                    activity.update_element(element);
+                    activity.adapter.connection.updateElement(element);
                 }
             }else {
                 if (name.isEmpty()) {
@@ -102,21 +102,21 @@ public class CreatorDialog extends DialogFragment {
                     }
                 }
                 element.updateName(name);
-                activity.create_element(element);
+                activity.adapter.connection.newElement(element);
             }
             dismiss();
             activity.hideKeyboard();
         });
         btn_delete.setOnClickListener((v)->{
             dismiss();
-            activity.delete_element(element);
+            activity.adapter.onClickDelete(element.getNameStart(), element.parent, element.id);
         });
         btn_cut.setOnClickListener((v)->{
             dismiss();
             if(editing){
-                activity.cut_element(element);
+                activity.adapter.cut_element(element);
             }else{
-                activity.paste_element();
+                activity.adapter.moveHere();
             }
         });
         return view;

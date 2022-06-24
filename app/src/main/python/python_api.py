@@ -32,9 +32,6 @@ class Executor:
         self.api = API(executor, activity)
         self.space = space
 
-    def add_param(self, name: str, param):
-        self.space[name] = param
-
     def run_code(self, filename: str, code: str):
         saved_stdout = StringIO()
         saved_stderr = StringIO()

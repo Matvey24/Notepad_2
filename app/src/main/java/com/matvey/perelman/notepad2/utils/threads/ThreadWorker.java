@@ -51,6 +51,5 @@ public class ThreadWorker extends Thread{
   }
   public void end(){
     disposed = true;
-    
   }
 }

@@ -6,13 +6,13 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.matvey.perelman.notepad2.creator.CreatorElement;
 import com.matvey.perelman.notepad2.executor.InputDialog;
 import com.matvey.perelman.notepad2.list.Adapter;
 import com.matvey.perelman.notepad2.creator.CreatorDialog;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -33,12 +33,13 @@ public class MainActivity extends AppCompatActivity {
     private Menu menu;
     public CreatorDialog creator_dialog;
 
-    public int to_update_index;
-
     private boolean isStopped;
+
+    private ActivityResultLauncher<Intent> editor_launcher;
 
     private InputDialog input_dialog = null;
     private CyclicBarrier barrier = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
         super.setTitle(null);
         title = findViewById(R.id.toolbar_title);
         //recycler view
-        adapter = new Adapter(this);
+        adapter = new Adapter(this, 0);
         RecyclerView rv = findViewById(R.id.list_view);
         rv.setLayoutManager(new LinearLayoutManager(this));
         rv.setAdapter(adapter);
@@ -58,16 +59,23 @@ public class MainActivity extends AppCompatActivity {
         //fab
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener((vie) -> {
-            if(!isStopped)
-                creator_dialog.startCreating(adapter.cursor.getPathID(),  adapter.path_to_cut != null);
+            if (!isStopped)
+                creator_dialog.startCreating(adapter.cursor.getPathID(), adapter.path_to_cut != null);
         });
         fab.setOnLongClickListener(v -> {
             adapter.quick_new_note();
             return true;
         });
-        //load state
+        //load delete info
         loadState();
-        to_update_index = -1;
+
+        //editor launcher
+        editor_launcher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    long id = result.getData().getLongExtra("id", -1);
+                    adapter.cursor.onChangeItem(id);
+                });
     }
 
     @Override
@@ -89,30 +97,13 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
-    public void start_editor(long id, int idx, String name, String content) {
+    public void start_editor(long id, String name) {
         Intent intent = new Intent(this, EditorActivity.class);
         intent.putExtra("id", id);
-        to_update_index = idx;
         intent.putExtra("name", name);
-        intent.putExtra("content", content);
-        intent.setAction(Intent.ACTION_VIEW);
-        startActivity(intent);
+        editor_launcher.launch(intent);
     }
-    public void create_element(CreatorElement element){
-        adapter.connection.newElement(element);
-    }
-    public void update_element(CreatorElement element) {
-        adapter.connection.updateElement(element);
-    }
-    public void delete_element(CreatorElement element){
-        adapter.onClickDelete(element.getNameStart(), element.parent, element.id);
-    }
-    public void cut_element(CreatorElement element){
-        adapter.cut_element(element);
-    }
-    public void paste_element(){
-        adapter.moveHere();
-    }
+
     public void loadState() {
         SharedPreferences sp = getSharedPreferences("saved_state", Context.MODE_PRIVATE);
         adapter.ask_before_delete = sp.getBoolean("ask_before_delete", true);
@@ -129,51 +120,47 @@ public class MainActivity extends AppCompatActivity {
         editor.putBoolean("ask_before_delete", adapter.ask_before_delete);
         editor.apply();
     }
-    public void makeToast(String text, boolean lon){
-        runOnUiThread(()-> Toast.makeText(this, text, lon?Toast.LENGTH_LONG:Toast.LENGTH_SHORT).show());
+
+    public void makeToast(String text, boolean len) {
+        runOnUiThread(() -> Toast.makeText(this, text, len ? Toast.LENGTH_LONG : Toast.LENGTH_SHORT).show());
     }
+
     @Override
     protected void onStart() {
         super.onStart();
         isStopped = false;
-        if (to_update_index != -1) {
-            adapter.cursor.reloadData();
-            adapter.notifyItemChanged(to_update_index);
-        }
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        adapter.runAsync("/settings/onActivityResult", "requestCode", requestCode, "resultCode", resultCode, "data", data);
-    }
-
-    public synchronized String showInputDialog(String input_name){
-        if(isStopped)
+    public synchronized String showInputDialog(String input_name) {
+        if (isStopped)
             throw new RuntimeException(getString(R.string.error_stopped_input));
-        if(barrier == null)
+        if (barrier == null)
             barrier = new CyclicBarrier(2);
-        runOnUiThread(()->{
-            if(input_dialog == null)
+        runOnUiThread(() -> {
+            if (input_dialog == null)
                 input_dialog = InputDialog.createInstance(this);
             input_dialog.start(input_name);
         });
         th_barrier_await();
         return input_dialog.getString();
     }
-    public void ui_barrier_wait(){
-        if(barrier.getNumberWaiting() == 1)
+
+    public void ui_barrier_wait() {
+        if (barrier.getNumberWaiting() == 1)
             th_barrier_await();
     }
-    public void th_barrier_await(){
-        try{
+
+    public void th_barrier_await() {
+        try {
             barrier.await();
-        }catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
     }
+
     @Override
     protected void onStop() {
-        super.onStop();
         isStopped = true;
+        super.onStop();
     }
 
     @Override
@@ -186,15 +173,14 @@ public class MainActivity extends AppCompatActivity {
         if (adapter.back())
             super.onBackPressed();
     }
+
     @Override
     public void onDestroy() {
         saveState();
-        if(barrier == null)
-            barrier = new CyclicBarrier(2);
-        adapter.onClose();
         creator_dialog.onDestroy();
-        if(input_dialog != null)
+        if (input_dialog != null)
             input_dialog.onDestroy();
+        adapter.close();
         super.onDestroy();
     }
 }

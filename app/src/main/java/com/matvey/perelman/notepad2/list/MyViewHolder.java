@@ -27,10 +27,11 @@ public class MyViewHolder extends RecyclerView.ViewHolder {
         action_btn.setOnClickListener((view)->adapter.onClickSettings(element));
         itemView.setOnClickListener((view)->{
             if(!error_message)
-                adapter.onClickField(element, getAdapterPosition());
+                adapter.onClickField(element);
         });
         itemView.setOnLongClickListener((view)->{
-            adapter.onClickSettings(element);
+            if(!error_message)
+                adapter.onClickSettings(element);
             return true;
         });
     }

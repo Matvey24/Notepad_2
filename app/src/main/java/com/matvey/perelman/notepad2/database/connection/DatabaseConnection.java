@@ -30,10 +30,14 @@ public class DatabaseConnection {
 
         db = new DatabaseHelper(context).getWritableDatabase();
     }
-    public DatabaseCursor makeCursor(ViewListener listener, AppCompatActivity activity){
-        DatabaseCursor cursor = new DatabaseCursor(this, listener, activity);
+    public DatabaseCursor makeCursor(ViewListener listener, AppCompatActivity activity, long path){
+        DatabaseCursor cursor = new DatabaseCursor(this, listener, activity, path);
         cursors.add(cursor);
         return cursor;
+    }
+    public void deleteCursor(DatabaseCursor cursor){
+        cursors.remove(cursor);
+        cursor.close();
     }
     public void close(){
         for(DatabaseCursor c: cursors)
@@ -165,16 +169,7 @@ public class DatabaseConnection {
         return null;
     }
     public String getContent(long id){
-        single_param[0] = String.valueOf(id);
-        Cursor c = db.rawQuery("SELECT content FROM main WHERE ID == ?", single_param);
-        String content;
-        if(c.getCount() != 0) {
-            c.moveToPosition(0);
-            content = c.getString(0);
-        }else
-            content = null;
-        c.close();
-        return content;
+        return DatabaseConnection.getContent(db, id, single_param);
     }
 
     public synchronized long newElement(CreatorElement element) {
@@ -284,5 +279,17 @@ public class DatabaseConnection {
         st.bindString(1, content);
         st.bindLong(2, id);
         st.execute();
+    }
+    public static String getContent(SQLiteDatabase database, long id, String[] single_param){
+        single_param[0] = String.valueOf(id);
+        Cursor c = database.rawQuery("SELECT content FROM main WHERE ID == ?", single_param);
+        String content;
+        if(c.getCount() != 0) {
+            c.moveToPosition(0);
+            content = c.getString(0);
+        }else
+            content = null;
+        c.close();
+        return content;
     }
 }
