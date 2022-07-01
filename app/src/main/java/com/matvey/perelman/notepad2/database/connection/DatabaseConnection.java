@@ -18,16 +18,11 @@ public class DatabaseConnection {
     public final SQLiteDatabase db;
     private final ArrayList<DatabaseCursor> cursors;
 
-    private final String[] single_param;
-    private final String[] double_param;
     private final StringBuilder sb;
 
     public DatabaseConnection(Context context){
         cursors = new ArrayList<>();
-        single_param = new String[1];
-        double_param = new String[2];
         sb = new StringBuilder();
-
         db = new DatabaseHelper(context).getWritableDatabase();
     }
     public DatabaseCursor makeCursor(ViewListener listener, AppCompatActivity activity, long path){
@@ -75,8 +70,7 @@ public class DatabaseConnection {
     }
 
     public void getElement(long id, DatabaseElement save_to){
-        single_param[0] = String.valueOf(id);
-        Cursor c = db.rawQuery("SELECT parent, name, type, substr(content, 0, 64) FROM main WHERE ID == ?", single_param);
+        Cursor c = db.rawQuery("SELECT parent, name, type, substr(content, 0, 64) FROM main WHERE ID == ?", new String[]{String.valueOf(id)});
         if(c.getCount() != 0){
             c.moveToPosition(0);
             save_to.id = id;
@@ -100,14 +94,13 @@ public class DatabaseConnection {
         save_to.content = list.getString(3);
     }
     public Cursor getListFiles(long folder_id){
-        single_param[0] = String.valueOf(folder_id);
-        return db.rawQuery("SELECT ID, name, type, substr(content, 0, 64) FROM main WHERE parent == ? AND ID != 0 ORDER BY name", single_param);
+        String[] param = {String.valueOf(folder_id)};
+        return db.rawQuery("SELECT ID, name, type, substr(content, 0, 64) FROM main WHERE parent == ? AND ID != 0 ORDER BY name", param);
 //        return db.rawQuery("SELECT ID, name, type, substr(content, 0, 64) FROM main WHERE ID != 0 ORDER BY name", null);
     }
     public long getID(long parent, String item){
-        double_param[0] = String.valueOf(parent);
-        double_param[1] = item;
-        Cursor c = db.rawQuery("SELECT ID FROM main WHERE parent == ? AND name == ?", double_param);
+        String[] param = {String.valueOf(parent), item};
+        Cursor c = db.rawQuery("SELECT ID FROM main WHERE parent == ? AND name == ?", param);
         long id;
         if(c.getCount() != 0) {
             c.moveToPosition(0);
@@ -118,15 +111,15 @@ public class DatabaseConnection {
         return id;
     }
     private boolean exists(long id){
-        single_param[0] = String.valueOf(id);
-        Cursor c = db.rawQuery("SELECT ID FROM main WHERE ID = ?", single_param);
+        String[] param = {String.valueOf(id)};
+        Cursor c = db.rawQuery("SELECT ID FROM main WHERE ID = ?", param);
         boolean b = c.getCount() != 0;
         c.close();
         return b;
     }
     public String getName(long id){
-        single_param[0] = String.valueOf(id);
-        Cursor c = db.rawQuery("SELECT name FROM main WHERE ID == ?", single_param);
+        String[] param = {String.valueOf(id)};
+        Cursor c = db.rawQuery("SELECT name FROM main WHERE ID == ?", param);
         String name;
         if(c.getCount() != 0) {
             c.moveToPosition(0);
@@ -137,8 +130,8 @@ public class DatabaseConnection {
         return name;
     }
     public long getParent(long id){
-        single_param[0] = String.valueOf(id);
-        Cursor c = db.rawQuery("SELECT parent FROM main WHERE ID == ?", single_param);
+        String[] param = {String.valueOf(id)};
+        Cursor c = db.rawQuery("SELECT parent FROM main WHERE ID == ?", param);
         long parent;
         if(c.getCount() != 0) {
             c.moveToPosition(0);
@@ -151,8 +144,8 @@ public class DatabaseConnection {
     public ElementType getType(long id){
         if(id == -1)
             return null;
-        single_param[0] = String.valueOf(id);
-        Cursor c = db.rawQuery("SELECT type FROM main WHERE ID == ?", single_param);
+        String[] param = {String.valueOf(id)};
+        Cursor c = db.rawQuery("SELECT type FROM main WHERE ID == ?", param);
         int type;
         if(c.getCount() != 0) {
             c.moveToPosition(0);
@@ -164,11 +157,7 @@ public class DatabaseConnection {
             return ElementType.values()[type];
         return null;
     }
-    public String getContent(long id){
-        return DatabaseConnection.getContent(db, id, single_param);
-    }
-
-    public synchronized long newElement(CreatorElement element) {
+    public long newElement(CreatorElement element) {
         //needs set: parent, name, type
         String enc_name = getFreeName(element.parent, element.getName());
         SQLiteStatement st = db.compileStatement("INSERT INTO main(parent, name, type, content) values(?, ?, ?, ?)");
@@ -183,7 +172,8 @@ public class DatabaseConnection {
         onNewItem(element.parent, id);
         return id;
     }
-    public synchronized void updateElement(CreatorElement element) {
+
+    public void updateElement(CreatorElement element) {
         //needs set: id, parent, name, type
         boolean updatedName = false;
         boolean updatedType = false;
@@ -208,7 +198,7 @@ public class DatabaseConnection {
             onChangeItem(element.parent, element.id);
         }
     }
-    public synchronized void updateParent(long id, long old_parent, long new_parent){
+    public void updateParent(long id, long old_parent, long new_parent){
         SQLiteStatement st = db.compileStatement("UPDATE main SET parent = ? WHERE ID = ?");
         st.bindLong(1, new_parent);
         st.bindLong(2, id);
@@ -217,7 +207,7 @@ public class DatabaseConnection {
         onNewItem(new_parent, id);
         onChangeName(new_parent);
     }
-    public synchronized void deleteElement(long parent, long id) {
+    public void deleteElement(long parent, long id) {
         SQLiteStatement st = db.compileStatement("DELETE FROM main WHERE ID == ?");
         st.bindLong(1, id);
         st.execute();
@@ -239,8 +229,8 @@ public class DatabaseConnection {
     }
     public boolean isParentFor(long parent, long element){
         while(element != 0){
-            single_param[0] = String.valueOf(element);
-            Cursor c = db.rawQuery("SELECT parent FROM main WHERE ID == ?", single_param);
+            String[] param = {String.valueOf(element)};
+            Cursor c = db.rawQuery("SELECT parent FROM main WHERE ID == ?", param);
             if(c.getCount() == 0)
                 return false;
             c.moveToPosition(0);
@@ -251,11 +241,11 @@ public class DatabaseConnection {
         }
         return false;
     }
-    public String buildPath(long id){
+    public synchronized String buildPath(long id){
         sb.setLength(0);
         while(id != 0) {
-            single_param[0] = String.valueOf(id);
-            Cursor c = db.rawQuery("SELECT name, parent FROM main WHERE ID == ?", single_param);
+            String[] param = {String.valueOf(id)};
+            Cursor c = db.rawQuery("SELECT name, parent FROM main WHERE ID == ?", param);
             int count = c.getCount();
             if(count == 0)
                 return null;
@@ -276,9 +266,12 @@ public class DatabaseConnection {
         st.bindLong(2, id);
         st.execute();
     }
-    public static String getContent(SQLiteDatabase database, long id, String[] single_param){
-        single_param[0] = String.valueOf(id);
-        Cursor c = database.rawQuery("SELECT content FROM main WHERE ID == ?", single_param);
+    public String getContent(long id){
+        return DatabaseConnection.getContent(db, id);
+    }
+    public static String getContent(SQLiteDatabase database, long id){
+        String[] param = {String.valueOf(id)};
+        Cursor c = database.rawQuery("SELECT content FROM main WHERE ID == ?", param);
         String content;
         if(c.getCount() != 0) {
             c.moveToPosition(0);

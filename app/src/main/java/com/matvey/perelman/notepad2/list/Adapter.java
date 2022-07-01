@@ -175,6 +175,9 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
             runFile(path_concat(cursor.path_t, element.name), element.parent, element.id);
         }
     }
+    public void view(long id){
+        main_activity.runOnUiThread(()->cursor.enterUI(id));
+    }
 
     public void goHelp() {
         tasks.runTask(() -> {

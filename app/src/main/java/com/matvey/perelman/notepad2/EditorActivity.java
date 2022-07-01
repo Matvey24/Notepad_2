@@ -48,7 +48,7 @@ public class EditorActivity extends AppCompatActivity {
 
 
         database = new DatabaseHelper(this).getWritableDatabase();
-        versions.add(DatabaseConnection.getContent(database, id, new String[1]));
+        versions.add(DatabaseConnection.getContent(database, id));
         text_editor.setText(versions.get(0));
 
         text_editor.addTextChangedListener(new TextWatcher() {

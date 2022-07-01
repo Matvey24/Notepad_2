@@ -163,6 +163,9 @@ class API:
     def cd(self, dpath: str):
         self.executor.cd(dpath)
 
+    @simple_exceptions
+    def view(self, dpath: str):
+        self.executor.view(dpath)
 
     def to_py(self, path: str) -> dict:
         if not self.exists(path):

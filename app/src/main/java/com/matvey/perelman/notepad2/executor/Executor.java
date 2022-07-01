@@ -357,7 +357,11 @@ public class Executor implements AutoCloseable {
         cdGo(dpath, parsePath(dpath), true);
         vis_folder = curr_path;
     }
-
+    @SuppressWarnings("UnusedDeclaration")
+    public void view(String dpath){
+        cdGo(dpath, parsePath(dpath), false);
+        activity.adapter.view(curr_path);
+    }
     public String getString(@StringRes int id, String text){
         return activity.getString(id, text);
     }
