@@ -31,8 +31,8 @@ public class MyViewHolder extends RecyclerView.ViewHolder {
         });
         itemView.setOnLongClickListener((view)->{
             if(!error_message)
-                adapter.onClickSettings(element);
-            return true;
+                return adapter.onLongClick(element);
+            return false;
         });
     }
     public void setValues(){

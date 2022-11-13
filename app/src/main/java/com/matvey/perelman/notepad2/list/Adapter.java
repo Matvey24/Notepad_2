@@ -32,13 +32,14 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
     public final DatabaseCursor cursor;
     private final MainActivity main_activity;
 
-    private final Stack<Executor> executors;
+    private final Stack<Executor> free_executors;
 
     private final Tasks tasks;
+    private boolean started;
     private PyObject space;
     public String path_to_cut;
 
-    public Adapter(MainActivity main_activity, long path, boolean onStartInBackground) {
+    public Adapter(MainActivity main_activity, long path, boolean onCreateEnabled) {
         connection = new DatabaseConnection(main_activity);
 
         cursor = connection.makeCursor(new ViewListener() {
@@ -76,23 +77,39 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
                 onPathRenamed();
                 notifyDataSetChanged();
             }
-
-        }, main_activity, path);
-
+        }, main_activity);
+        cursor.enterUI(path);
+        started = false;
         this.main_activity = main_activity;
         tasks = new Tasks(Integer.MAX_VALUE);
-        executors = new Stack<>();
-        if(onStartInBackground)
-            tasks.runTask(this::pythonStart);
-        else
+        free_executors = new Stack<>();
+        if(onCreateEnabled){
             pythonStart();
+            runCreate();
+            tasks.runTask(()->{
+                main_activity.th_barrier_await();
+                runStart();
+            });
+        }else{
+            tasks.runTask(()->{
+                pythonStart();
+                main_activity.th_barrier_await();
+                runStart();
+            });
+        }
+    }
+
+    public void makeStarted(){
+        if(started)
+            return;
+        started = true;
+        main_activity.ui_barrier_wait();
     }
 
     private void pythonStart(){
         if (!Python.isStarted())
             Python.start(new AndroidPlatform(main_activity));
         space = Python.getInstance().getModule("python_api").callAttr("__java_api_make_dict");
-        runStart();
     }
 
     public void onClickDelete(String name, long parent, long id) {
@@ -105,7 +122,33 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
         } else
             tasks.runTask(() -> connection.deleteElement(parent, id));
     }
-
+    public boolean onLongClick(DatabaseElement element){
+        switch (element.type){
+            case SCRIPT:
+                main_activity.startEditor(element.id, element.name);
+                break;
+            case TEXT:
+                runFile(path_concat(cursor.path_t, element.name), element.parent, element.id, true);
+                break;
+            case FOLDER:
+                main_activity.creator_dialog.startEditing(element);
+                break;
+        }
+        return true;
+    }
+    public void onClickField(DatabaseElement element) {
+        switch (element.type){
+            case SCRIPT:
+                runFile(path_concat(cursor.path_t, element.name), element.parent, element.id, true);
+                break;
+            case TEXT:
+                main_activity.startEditor(element.id, element.name);
+                break;
+            case FOLDER:
+                cursor.enterUI(element.id);
+                break;
+        }
+    }
     public void onClickSettings(DatabaseElement element) {
         main_activity.creator_dialog.startEditing(element);
     }
@@ -122,29 +165,42 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
         }
         freeExecutor(e);
     }
+
     public boolean back() {
         return cursor.backUI();
     }
 
     private Executor allocExecutor() {
-        synchronized (executors) {
-            if (executors.isEmpty())
-                return new Executor(connection, main_activity, Python.getInstance().getModule("python_api"), space);
+        synchronized (free_executors) {
+            Executor e;
+            if (free_executors.isEmpty())
+                e = new Executor(connection, main_activity, Python.getInstance().getModule("python_api"), space);
             else
-                return executors.pop();
+                e = free_executors.pop();
+            return e;
         }
     }
 
     private void freeExecutor(Executor ex) {
-        synchronized (executors) {
-            executors.push(ex);
+        synchronized (free_executors) {
+            free_executors.push(ex);
         }
     }
-
-    public void runFile(String filepath, long parent, long id) {
+    public void runPath(String filepath, boolean check_empty){
+        tasks.runTask(()->{
+            Executor e = allocExecutor();
+            try {
+                e.begin(filepath, check_empty);
+            }catch (RuntimeException ex){
+                main_activity.makeToast(ex.getMessage(), true);
+            }
+            freeExecutor(e);
+        });
+    }
+    public void runFile(String filepath, long parent, long id, boolean check_empty) {
         tasks.runTask(() -> {
             Executor e = allocExecutor();
-            e.begin(filepath, id, parent);
+            e.begin(filepath, id, parent, check_empty);
             freeExecutor(e);
         });
     }
@@ -152,8 +208,8 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
     public void runRunnable(String filepath){
         Executor e = allocExecutor();
         try {
-            e.begin(filepath);
-        }catch (RuntimeException ignored){}
+            e.begin(filepath, false);
+        }catch (Exception ignored){}
         freeExecutor(e);
     }
 
@@ -163,17 +219,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
         celement.setName(main_activity.getString(R.string.new_file_text));
         celement.parent = cursor.getPathID();
         long id = connection.newElement(celement);
-        main_activity.start_editor(id, connection.getName(id));
-    }
-
-    public void onClickField(DatabaseElement element) {
-        if (element.type == ElementType.FOLDER) {
-            cursor.enterUI(element.id);
-        } else if (element.type == ElementType.TEXT) {
-            main_activity.start_editor(element.id, element.name);
-        } else if (element.type == ElementType.SCRIPT) {
-            runFile(path_concat(cursor.path_t, element.name), element.parent, element.id);
-        }
+        main_activity.startEditor(id, connection.getName(id));
     }
     public void view(long id){
         main_activity.runOnUiThread(()->cursor.enterUI(id));
@@ -251,6 +297,9 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
             return 1;
         return count;
     }
+    private void runCreate(){
+        runRunnable("/settings/onCreate");
+    }
     private void runStart(){
         runRunnable("/settings/onStart");
     }
@@ -261,7 +310,7 @@ public class Adapter extends RecyclerView.Adapter<MyViewHolder> {
         }else {
             tasks.finalTask = () -> {
                 connection.close();
-                main_activity.th_barrier_await();
+                main_activity.ui_barrier_wait();
             };
             main_activity.th_barrier_await();
         }

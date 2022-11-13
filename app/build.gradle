@@ -8,7 +8,7 @@ android {
             storeFile file('C:\\Users\\Matvey\\Documents\\android keys\\notepad\\android_key.jks')
             storePassword 'matvey24_Perelman'
             keyAlias 'Notepad_2-key'
-            keyPassword 'qwerty24 humster'
+            keyPassword 'qwerty24 humster'//yes, I see it
         }
     }
     compileSdkVersion 31
@@ -18,13 +18,13 @@ android {
         applicationId "com.matvey.perelman.notepad2"
         minSdkVersion 21
         targetSdkVersion 31
-        versionCode 4
-        versionName "1.3"
+        versionCode 5
+        versionName "1.4"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
         python{
-            buildPython "C:/Program files/Python310/python.exe"
+            buildPython "C:/Program files/Python38/python.exe"
         }
         ndk{
             abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"

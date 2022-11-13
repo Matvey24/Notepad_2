@@ -25,8 +25,8 @@ public class DatabaseConnection {
         sb = new StringBuilder();
         db = new DatabaseHelper(context).getWritableDatabase();
     }
-    public DatabaseCursor makeCursor(ViewListener listener, AppCompatActivity activity, long path){
-        DatabaseCursor cursor = new DatabaseCursor(this, listener, activity, path);
+    public DatabaseCursor makeCursor(ViewListener listener, AppCompatActivity activity){
+        DatabaseCursor cursor = new DatabaseCursor(this, listener, activity);
         cursors.add(cursor);
         return cursor;
     }
@@ -254,6 +254,8 @@ public class DatabaseConnection {
             id = c.getLong(1);
             c.close();
         }
+        if(sb.length() == 0)
+            sb.append("/");
         return sb.toString();
     }
     public synchronized void updateTextData(DatabaseElement element){

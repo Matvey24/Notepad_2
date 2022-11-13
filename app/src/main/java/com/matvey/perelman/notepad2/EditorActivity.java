@@ -8,6 +8,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 
@@ -24,7 +25,7 @@ public class EditorActivity extends AppCompatActivity {
     private SQLiteDatabase database;
 
     private EditText text_editor;
-    private MenuItem btn_save, btn_rollback, btn_rollforward;
+    private MenuItem btn_save, btn_rollback, btn_rollforward, btn_kso;
 
     private long id;
 
@@ -39,9 +40,8 @@ public class EditorActivity extends AppCompatActivity {
         versions = new ArrayList<>();
         position = 0;
         save_changed = false;
-
         text_editor = findViewById(R.id.editor_text);
-
+        
         Intent intent = getIntent();
         setTitle(intent.getStringExtra("name"));
         id = intent.getLongExtra("id", -1);
@@ -123,6 +123,9 @@ public class EditorActivity extends AppCompatActivity {
             rollback();
         } else if (item == btn_rollforward) {
             rollForward();
+        } else if (item == btn_kso){
+            btn_kso.setChecked(!btn_kso.isChecked());
+            getWindow().setFlags(btn_kso.isChecked()?128:0, 128);
         }
         return super.onOptionsItemSelected(item);
     }
@@ -133,6 +136,7 @@ public class EditorActivity extends AppCompatActivity {
         btn_save = menu.getItem(0);
         btn_rollback = menu.getItem(1);
         btn_rollforward = menu.getItem(2);
+        btn_kso = menu.getItem(3);
         return true;
     }
 

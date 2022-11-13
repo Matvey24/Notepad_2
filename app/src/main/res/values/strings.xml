@@ -38,5 +38,8 @@
     <string name="error_run_nofile">Could not run \'%s\' - folder</string>
     <string name="folder_help_name">Help-en</string>
     <string name="error_stopped_input">Could not open input dialog while activity is not on display</string>
+    <string name="warn_script_empty">The script is empty: %s</string>
+    <string name="action_keep_screen_on">Keep screen on</string>
+    <string name="error_wait_in_main_thread">Could not wait for %s in main thread</string>
 
 </resources>

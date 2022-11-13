@@ -6,7 +6,9 @@ import android.os.Looper;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.matvey.perelman.notepad2.database.DatabaseElement;
-import java.util.concurrent.CyclicBarrier;
+import com.matvey.perelman.notepad2.utils.threads.Locker;
+
+import java.util.concurrent.Exchanger;
 
 public class DatabaseCursor implements IDListener {
     public final DatabaseConnection conn;
@@ -14,17 +16,20 @@ public class DatabaseCursor implements IDListener {
 
     public String path_t;
 
-    private Cursor vis_files;
+    private Cursor vis_files, new_data;
     private final ViewListener listener;
     private final AppCompatActivity context;
-    private final CyclicBarrier cb;
+    private final Locker locker;
 
-    public DatabaseCursor(DatabaseConnection connection, ViewListener listener, AppCompatActivity context, long path) {
+    private interface UIUpdate<T>{
+        void run(T idx_from, T idx_to);
+    }
+
+    public DatabaseCursor(DatabaseConnection connection, ViewListener listener, AppCompatActivity context) {
         this.listener = listener;
         this.conn = connection;
         this.context = context;
-        cb = new CyclicBarrier(2);
-        setPath(path);
+        locker = new Locker();
     }
 
     public int length() {
@@ -34,7 +39,9 @@ public class DatabaseCursor implements IDListener {
     public void getElement(DatabaseElement saveTo, int idx) {
         DatabaseConnection.getElement(vis_files, saveTo, path_id, idx);
     }
-
+    private void uiEnterUI(long normal_id, long tmp){
+        enterUI(normal_id);
+    }
     public void enterUI(long normal_id) {
         path_id = normal_id;
         updatePath();
@@ -57,10 +64,18 @@ public class DatabaseCursor implements IDListener {
     private void updatePath() {
         path_t = conn.buildPath(path_id);
     }
-
-    public void reloadData() {
+    private void load_new(){
+        new_data = conn.getListFiles(path_id);
+    }
+    private void exchange(){
         close();
-        vis_files = conn.getListFiles(path_id);
+        vis_files = new_data;
+        new_data = null;
+    }
+
+    private void reloadData(){
+        load_new();
+        exchange();
     }
 
     public void close() {
@@ -68,121 +83,86 @@ public class DatabaseCursor implements IDListener {
             vis_files.close();
     }
 
-    public int indexOf(long id) {
-        for (int i = 0; i < vis_files.getCount(); ++i) {
-            vis_files.moveToPosition(i);
-            if (vis_files.getLong(0) == id)
+    private int indexOf(Cursor c, long id) {
+        for (int i = 0; i < c.getCount(); ++i) {
+            c.moveToPosition(i);
+            if (c.getLong(0) == id)
                 return i;
         }
         return -1;
     }
 
-    public void setPath(long id) {
-        path_id = id;
-        updatePath();
-        reloadData();
-    }
-
     @Override
     public void onNewItem(long id) {
-        if(Thread.currentThread() == Looper.getMainLooper().getThread()){
-            uiOnNewItem(id);
-        }else{
-            context.runOnUiThread(()->{
-                uiOnNewItem(id);
-                await();
-            });
-            await();
-        }
+        load_new();
+        int idx_to = indexOf(new_data, id);
+        if(idx_to == -1)
+            return;
+        uiUpdate(-1, idx_to, this::uiOnNewItem);
     }
     @Override
     public void onDeleteItem(long id) {
-        if (Thread.currentThread() == Looper.getMainLooper().getThread()) {
-            uiOnDeleteItem(id);
-        } else {
-            context.runOnUiThread(() -> {
-                uiOnDeleteItem(id);
-                await();
-            });
-            await();
-        }
+        load_new();
+        int idx_from = indexOf(vis_files, id);
+        uiUpdate(idx_from, -1, this::uiOnDeleteItem);
     }
     @Override
     public void onChangeItem(long id) {
-        if(Thread.currentThread() == Looper.getMainLooper().getThread()){
-            uiOnChangeItem(id);
-        }else {
-            context.runOnUiThread(() -> {
-                uiOnChangeItem(id);
-                await();
-            });
-            await();
-        }
+        load_new();
+        int idx_from = indexOf(vis_files, id);
+        int idx_to = indexOf(new_data, id);
+        if(idx_from != -1 && idx_to != -1)
+            uiUpdate(idx_from, idx_to, this::uiOnChangeItem);
     }
-
     @Override
     public void onPathRenamed() {
-        if(Thread.currentThread() == Looper.getMainLooper().getThread()){
-            updatePath();
-            listener.onPathRenamed();
-        }else {
-            context.runOnUiThread(() -> {
-                updatePath();
-                listener.onPathRenamed();
-                await();
-            });
-            await();
-        }
+        uiUpdate(-1, -1, this::uiUpdatePath);
     }
-
     @Override
     public void onPathChanged(long to_id) {
+        uiUpdate(to_id, -1L, this::uiEnterUI);
+    }
+
+    private void uiUpdatePath(int tmp1, int tmp2){
+        updatePath();
+        listener.onPathRenamed();
+    }
+
+    private <T> void uiUpdate(T idx_from, T idx_to, UIUpdate<T> func){
         if(Thread.currentThread() == Looper.getMainLooper().getThread()){
-            enterUI(to_id);
+            func.run(idx_from, idx_to);
         }else {
             context.runOnUiThread(() -> {
-                enterUI(to_id);
-                await();
+                func.run(idx_from, idx_to);
+                locker.free();
             });
-            await();
+            locker.lock();
         }
     }
 
-    private void await() {
-        try {
-            cb.await();
-        } catch (Exception ignored) {
-        }
+    private void uiOnNewItem(int idx_from, int idx_to){
+        exchange();
+        listener.onNewItem(idx_to);
     }
-    private void uiOnNewItem(long id){
-        reloadData();
-        int idx = indexOf(id);
-        if (idx != -1)
-            listener.onNewItem(idx);
+
+    private void uiOnDeleteItem(int idx_from, int idx_to){
+        exchange();
+        listener.onDeleteItem(idx_from);
     }
-    private void uiOnDeleteItem(long id){
-        int idx = indexOf(id);
-        if (idx == -1)
+
+    private void uiOnChangeItem(int idx_from, int idx_to){
+        exchange();
+        if (idx_from == -1 && idx_to == -1)
             return;
-        reloadData();
-        if (indexOf(id) == -1)
-            listener.onDeleteItem(idx);
-    }
-    private void uiOnChangeItem(long id){
-        int idx1 = indexOf(id);
-        reloadData();
-        int idx2 = indexOf(id);
-        if (idx1 == -1 && idx2 == -1)
-            return;
-        if (idx2 == -1) {
-            listener.onDeleteItem(idx1);
+        if (idx_to == -1) {
+            listener.onDeleteItem(idx_from);
             return;
         }
-        if (idx1 == -1) {
-            listener.onNewItem(idx2);
+        if (idx_from == -1) {
+            listener.onNewItem(idx_to);
             return;
         }
-        listener.onChangeItem(idx1, idx2);
+        listener.onChangeItem(idx_from, idx_to);
     }
     @Override
     public long getPathID() {

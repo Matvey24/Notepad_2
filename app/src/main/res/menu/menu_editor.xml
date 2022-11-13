@@ -7,4 +7,8 @@
         app:showAsAction="ifRoom" />
     <item android:title="@string/action_rollback" />
     <item android:title="@string/action_rollforward" />
+    <item
+        android:checkable="true"
+        android:checked="false"
+        android:title="@string/action_keep_screen_on" />
 </menu>

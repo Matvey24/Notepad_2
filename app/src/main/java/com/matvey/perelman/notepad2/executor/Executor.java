@@ -2,6 +2,7 @@ package com.matvey.perelman.notepad2.executor;
 
 import android.database.Cursor;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 
 import com.chaquo.python.PyObject;
@@ -16,9 +17,8 @@ import java.util.ArrayList;
 
 public class Executor implements AutoCloseable {
     private final MainActivity activity;
-    private final PyObject py_executor;
+    public final PyObject py_executor;
     private final DatabaseConnection conn;
-
     private final CreatorElement celement;
     private final DatabaseElement delement;
 
@@ -33,39 +33,71 @@ public class Executor implements AutoCloseable {
         delement = new DatabaseElement();
         py_executor = api.callAttr("__java_api_make_executor", this, activity, space);
     }
-
-    public void begin(String path){
+    public void begin(String path, boolean check_empty) {
         vis_folder = 0;
         String entry = cdGoEntry(path, parsePath(path), false);
         long id = conn.getID(curr_path, entry);
-        if(id != -1 && conn.getType(id) != ElementType.FOLDER) {
-            begin(path, id, curr_path);
-        }else
-            throw new RuntimeException(getString(R.string.error_run_nofile, path));
+        if(id == -1)
+            throw new RuntimeException(activity.getString(R.string.error_bad_path, path));
+        if (conn.getType(id) == ElementType.FOLDER)
+            throw new RuntimeException(activity.getString(R.string.error_run_nofile, path));
+        begin(path, id, curr_path, check_empty);
     }
-    public void begin(String filepath, long id, long parent) {
+
+    public void begin(String filepath, long id, long parent, boolean check_empty) {
         String content = conn.getContent(id);
         this.filepath = filepath;
         vis_folder = parent;
-        py_executor.callAttr("run_code", filepath, content);
+        if (check_empty && content.equals(""))
+            activity.makeToast(activity.getString(R.string.warn_script_empty, filepath), true);
+        else
+            py_executor.callAttr("execute", filepath, content);
     }
 
     public void makeDatabase(String json) {
         vis_folder = 0;
         py_executor.callAttr("from_json", json, "/");
     }
+
     @SuppressWarnings("UnusedDeclaration")
     public String getScriptPath() {
         return filepath;
     }
-    public String getPath() {
-        return conn.buildPath(vis_folder);
+    @SuppressWarnings("UnusedDeclaration")
+    public String getPath(@NonNull String path) {
+        if(".".equals(path)){
+            return conn.buildPath(vis_folder);
+        }else{
+            ArrayList<String> p = parsePath(path);
+            if(p.size() > 0 && p.get(0).equals("/"))
+                return concatPath(p);
+            return path_concat(conn.buildPath(vis_folder), concatPath(p));
+        }
+    }
+    private static String concatPath(ArrayList<String> path){
+        if(path.size() == 0)
+            return "";
+        StringBuilder sb = new StringBuilder();
+        int i = 0;
+        if(path.get(0).equals("/")) {
+            sb.append("/");
+            i = 1;
+        }
+        for(; i < path.size(); ++i){
+            sb.append(path.get(i));
+            if(i + 1 != path.size())
+                sb.append("/");
+        }
+        return sb.toString();
     }
     @SuppressWarnings("UnusedDeclaration")
-    public String getScriptName(){
+    public String getScriptName() {
         return getName(filepath);
     }
+
     public static ArrayList<String> parsePath(String path) {
+        if(path == null)
+            throw new NullPointerException("path is none");
         if (path.trim().equals("/")) {
             ArrayList<String> list = new ArrayList<>();
             list.add(path);
@@ -101,33 +133,32 @@ public class Executor implements AutoCloseable {
         }
         return list;
     }
-
     //get name of entry, go to folder, that contains this entry
-    public String cdGoEntry(String path, ArrayList<String> arr, boolean make_dir) {
-        if(arr.size() == 0){
+    private String cdGoEntry(@NonNull String path, ArrayList<String> arr, boolean make_dir) {
+        if (arr.size() == 0) {
             curr_path = conn.getParent(vis_folder);
             return conn.getName(vis_folder);
         }
         int i = 0;
-        if(arr.get(0).equals("/")){
+        if (arr.get(0).equals("/")) {
             curr_path = 0;
             i = 1;
-            if(arr.size() == 1)
+            if (arr.size() == 1)
                 return "/";
-        }else
+        } else
             curr_path = vis_folder;
 
-        for(; i < arr.size() - 1; ++i){
+        for (; i < arr.size() - 1; ++i) {
             if ("..".equals(arr.get(i)))
                 curr_path = conn.getParent(curr_path);
             else {
                 long new_path = conn.getID(curr_path, arr.get(i));
-                if(new_path == -1) {
-                    if(make_dir)
+                if (new_path == -1) {
+                    if (make_dir)
                         curr_path = defnewDir(arr.get(i));
                     else
                         throw new RuntimeException(getString(R.string.error_bad_path, path));
-                }else if(conn.getType(new_path) != ElementType.FOLDER)
+                } else if (conn.getType(new_path) != ElementType.FOLDER)
                     throw new RuntimeException(activity.getString(R.string.error_file2folder, arr.get(i)));
                 else
                     curr_path = new_path;
@@ -135,7 +166,7 @@ public class Executor implements AutoCloseable {
         }
 
         String last = arr.get(arr.size() - 1);
-        if(last.equals("..")){
+        if (last.equals("..")) {
             curr_path = conn.getParent(curr_path);
             String name = conn.getName(curr_path);
             curr_path = conn.getParent(curr_path);
@@ -143,30 +174,31 @@ public class Executor implements AutoCloseable {
         }
         return last;
     }
+
     //go to the folder
-    public void cdGo(String path, ArrayList<String> arr, boolean make_dir){
-        if(arr.size() == 0){
+    private void cdGo(@NonNull String path, ArrayList<String> arr, boolean make_dir) {
+        if (arr.size() == 0) {
             curr_path = vis_folder;
             return;
         }
         int i = 0;
-        if(arr.get(0).equals("/")){
+        if (arr.get(0).equals("/")) {
             curr_path = 0;
             i = 1;
-        }else
+        } else
             curr_path = vis_folder;
 
-        for(; i < arr.size(); ++i){
-            if("..".equals(arr.get(i)))
+        for (; i < arr.size(); ++i) {
+            if ("..".equals(arr.get(i)))
                 curr_path = conn.getParent(curr_path);
-            else{
+            else {
                 long new_path = conn.getID(curr_path, arr.get(i));
-                if(new_path == -1){
-                    if(make_dir)
+                if (new_path == -1) {
+                    if (make_dir)
                         curr_path = defnewDir(arr.get(i));
                     else
                         throw new RuntimeException(getString(R.string.error_bad_path, path));
-                }else if(conn.getType(new_path) != ElementType.FOLDER)
+                } else if (conn.getType(new_path) != ElementType.FOLDER)
                     throw new RuntimeException(activity.getString(R.string.error_file2folder, arr.get(i)));
                 else
                     curr_path = new_path;
@@ -174,28 +206,29 @@ public class Executor implements AutoCloseable {
         }
     }
 
-    private long defnewFile(String file, boolean exec) {
+    private long defnewFile(@NonNull String file, boolean exec) {
         celement.setName(file);
         celement.setType(exec ? ElementType.SCRIPT : ElementType.TEXT);
         celement.parent = curr_path;
         return conn.newElement(celement);
     }
 
-    private long defnewDir(String dir) {
+    private long defnewDir(@NonNull String dir) {
         celement.setName(dir);
         celement.setType(ElementType.FOLDER);
         celement.parent = curr_path;
         return conn.newElement(celement);
     }
+
     @SuppressWarnings("UnusedDeclaration")
-    public void touch(String tpath) {
+    public void touch(@NonNull String tpath) {
         String entry = cdGoEntry(tpath, Executor.parsePath(tpath), true);
         long id = conn.getID(curr_path, entry);
         if (id == -1)
             defnewFile(entry, false);
     }
 
-    public void mkdir(String dpath) {
+    public void mkdir(@NonNull String dpath) {
         String dir = cdGoEntry(dpath, Executor.parsePath(dpath), true);
         long id = conn.getID(curr_path, dir);
         if (id == -1)
@@ -203,8 +236,9 @@ public class Executor implements AutoCloseable {
         else if (conn.getType(id) != ElementType.FOLDER)
             throw new RuntimeException(activity.getString(R.string.error_file2folder, dir));
     }
+
     @SuppressWarnings("UnusedDeclaration")
-    public boolean delete(String path) {
+    public boolean delete(@NonNull String path) {
         String entry = cdGoEntry(path, Executor.parsePath(path), false);
         long id = conn.getID(curr_path, entry);
         if (id < 1) {
@@ -214,8 +248,9 @@ public class Executor implements AutoCloseable {
             return true;
         }
     }
+
     @SuppressWarnings("UnusedDeclaration")
-    public void write(String fpath, String content) {
+    public void write(@NonNull String fpath, @NonNull String content) {
         String file = cdGoEntry(fpath, Executor.parsePath(fpath), true);
         long id = conn.getID(curr_path, file);
         if (id == -1) {
@@ -228,16 +263,18 @@ public class Executor implements AutoCloseable {
         delement.content = content;
         conn.updateTextData(delement);
     }
+
     @SuppressWarnings("UnusedDeclaration")
-    public String read(String fpath) {
+    public String read(@NonNull String fpath) {
         String file = cdGoEntry(fpath, Executor.parsePath(fpath), false);
         long id = conn.getID(curr_path, file);
         if (id == -1 || conn.getType(id) == ElementType.FOLDER)
             throw new RuntimeException(activity.getString(R.string.error_read_existence, file));
         return conn.getContent(id);
     }
+
     @SuppressWarnings("UnusedDeclaration")
-    public void script(String fpath, boolean mode) {
+    public void script(@NonNull String fpath, boolean mode) {
         String file = cdGoEntry(fpath, Executor.parsePath(fpath), true);
         long id = conn.getID(curr_path, file);
         if (id == -1) {
@@ -255,28 +292,32 @@ public class Executor implements AutoCloseable {
             conn.updateElement(celement);
         }
     }
+
     @SuppressWarnings("UnusedDeclaration")
-    public Cursor listFiles(String dpath) {
+    public Cursor listFiles(@NonNull String dpath) {
         cdGo(dpath, Executor.parsePath(dpath), false);
         return conn.getListFiles(curr_path);
     }
 
     @SuppressWarnings("UnusedDeclaration")
-    public boolean exists(String path) {
+    public boolean exists(@NonNull String path) {
         String entry = cdGoEntry(path, Executor.parsePath(path), false);
         return conn.getID(curr_path, entry) != -1;
     }
+
     @SuppressWarnings("UnusedDeclaration")
-    public ElementType getType(String path) {
+    public ElementType getType(@NonNull String path) {
         try {
             String entry = cdGoEntry(path, Executor.parsePath(path), false);
             return conn.getType(conn.getID(curr_path, entry));
-        }catch (RuntimeException e){
+        } catch (RuntimeException e) {
             return null;
         }
     }
 
     public static String path_concat(String path1, String path2) {
+        if(path1 == null || path2 == null)
+            throw new NullPointerException("path1|path2 is none");
         path1 = path1.trim();
         path2 = path2.trim();
         if (path1.endsWith("/")) {
@@ -293,8 +334,11 @@ public class Executor implements AutoCloseable {
             }
         }
     }
+
     @SuppressWarnings("UnusedDeclaration")
-    public void rename(String epath, String name2) {
+    public void rename(@NonNull String epath, String name2) {
+        if(name2 == null)
+            throw new NullPointerException("name is none");
         String name1 = cdGoEntry(epath, Executor.parsePath(epath), false);
 
         long id = conn.getID(curr_path, name1);
@@ -302,7 +346,7 @@ public class Executor implements AutoCloseable {
             throw new RuntimeException(activity.getString(R.string.error_bad_path, epath));
         long id2 = conn.getID(curr_path, name2);
         if (id2 != -1)
-            throw new RuntimeException(activity.getString(R.string.error_rename_exists, epath));
+            throw new RuntimeException(activity.getString(R.string.error_rename_exists, name2));
         celement.id = id;
         celement.parent = curr_path;
         celement.setType(conn.getType(id));
@@ -311,7 +355,7 @@ public class Executor implements AutoCloseable {
         conn.updateElement(celement);
     }
 
-    public String getName(String path) {
+    public String getName(@NonNull String path) {
         ArrayList<String> p = parsePath(path);
         if (p.size() == 0 || p.get(p.size() - 1).equals(".."))
             return cdGoEntry(path, p, false);
@@ -319,13 +363,13 @@ public class Executor implements AutoCloseable {
             return p.get(p.size() - 1);
     }
 
-    public void move(String entry_cut, String path_paste) {
+    public void move(@NonNull String entry_cut, @NonNull String path_paste) {
         ArrayList<String> path_from = parsePath(entry_cut);
         String name = cdGoEntry(entry_cut, path_from, false);
 
         long from_dir = curr_path;
         long from_id = conn.getID(curr_path, name);
-        if(from_id < 1)//ничего не найдено по данному пути
+        if (from_id < 1)//ничего не найдено по данному пути
             throw new RuntimeException(getString(R.string.error_bad_path, entry_cut));
 
         ArrayList<String> path_to = parsePath(path_paste);
@@ -339,32 +383,63 @@ public class Executor implements AutoCloseable {
             return;
 
         long err_id = conn.getID(to_dir, name);
-        if(err_id != -1)
+        if (err_id != -1)
             throw new RuntimeException(getString(R.string.error_rename_exists, path_concat(path_paste, name)));
         conn.updateParent(from_id, from_dir, to_dir);
     }
+
     @SuppressWarnings("UnusedDeclaration")
-    public void run(String path){
+    public void run(@NonNull String path) {
         String entry = cdGoEntry(path, parsePath(path), false);
         long id = conn.getID(curr_path, entry);
-        if(id != -1 && conn.getType(id) != ElementType.FOLDER)
-            activity.adapter.runFile(conn.buildPath(id), curr_path, id);
+        if (id == -1)
+            throw new RuntimeException(activity.getString(R.string.error_bad_path, path));
+        if (conn.getType(id) != ElementType.FOLDER)
+            activity.adapter.runFile(conn.buildPath(id), curr_path, id, false);
         else
             throw new RuntimeException(getString(R.string.error_run_nofile, path));
     }
     @SuppressWarnings("UnusedDeclaration")
-    public void cd(String dpath){
+    public void reset_params(PyObject list, @NonNull String path){
+        String entry = cdGoEntry(path, parsePath(path), false);
+        long id = conn.getID(curr_path, entry);
+        if (id == -1)
+            throw new RuntimeException(activity.getString(R.string.error_bad_path, path));
+        if (conn.getType(id) == ElementType.FOLDER)
+            throw new RuntimeException(getString(R.string.error_run_nofile, path));
+        list.callAttr("append", this.filepath);
+        list.callAttr("append", this.vis_folder);
+        list.callAttr("append", conn.getContent(id));
+        String new_path = conn.buildPath(id);
+        list.callAttr("append", new_path);
+        list.callAttr("append", entry);
+        this.filepath = new_path;
+        this.vis_folder = curr_path;
+    }
+    @SuppressWarnings("UnusedDeclaration")
+    public void return_params(PyObject list){
+        this.filepath = list.callAttr("__getitem__", 0).toString();
+        this.vis_folder = list.callAttr("__getitem__", 1).toLong();
+    }
+    @SuppressWarnings("UnusedDeclaration")
+    public void cd(@NonNull String dpath) {
         cdGo(dpath, parsePath(dpath), true);
         vis_folder = curr_path;
     }
+
     @SuppressWarnings("UnusedDeclaration")
-    public void view(String dpath){
+    public void view(@NonNull String dpath) {
         cdGo(dpath, parsePath(dpath), false);
         activity.adapter.view(curr_path);
     }
-    public String getString(@StringRes int id, String text){
+    @SuppressWarnings("UnusedDeclaration")
+    public String getViewPath(){
+        return activity.adapter.cursor.path_t;
+    }
+    public String getString(@StringRes int id, Object... text) {
         return activity.getString(id, text);
     }
+
     @Override
     public void close() {
         conn.close();

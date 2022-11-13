@@ -9,6 +9,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.matvey.perelman.notepad2.executor.InputDialog;
 import com.matvey.perelman.notepad2.list.Adapter;
 import com.matvey.perelman.notepad2.creator.CreatorDialog;
+import com.matvey.perelman.notepad2.utils.threads.Locker;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -18,15 +19,28 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.os.IBinder;
+import android.os.PersistableBundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.concurrent.CyclicBarrier;
+import java.util.ArrayList;
+import java.util.TreeMap;
+import java.util.concurrent.Exchanger;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class MainActivity extends AppCompatActivity {
+    private static final String SP_NAME = "saved_state";
+    private static final String SP_ASK_BEFORE_DELETE = "ask_before_delete";
+    private static final String SP_ON_CREATE_ENABLED = "on_create_enabled";
+    private static final String BUNDLE_VIEW_PATH = "view_path";
+
     public ConstraintLayout root_layout;
     public Adapter adapter;
     private TextView title;
@@ -35,26 +49,38 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean isStopped = true;
 
+    private boolean menu_created;
+    private TreeMap<String, String> menu_sets;
+
     private ActivityResultLauncher<Intent> editor_launcher;
 
+    private final Object input_lock = new Object();
     private InputDialog input_dialog = null;
-    private CyclicBarrier barrier = null;
+    private Locker lock, menu_lock;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        menu_created = false;
         //preparing
         setContentView(R.layout.activity_main);
         setSupportActionBar(findViewById(R.id.toolbar));
         root_layout = findViewById(R.id.root_layout);
+        lock = new Locker();
+        menu_lock = new Locker();
         super.setTitle(null);
         title = findViewById(R.id.toolbar_title);
         //load sp
-        SharedPreferences sp = getSharedPreferences("saved_state", Context.MODE_PRIVATE);
-        boolean ask_before_delete = sp.getBoolean("ask_before_delete", true);
-        boolean onStartInBackground = sp.getBoolean("on_start_in_background", true);
+        SharedPreferences sp = getSharedPreferences(SP_NAME, Context.MODE_PRIVATE);
+        boolean ask_before_delete = sp.getBoolean(SP_ASK_BEFORE_DELETE, true);
+        boolean onCreateEnabled = sp.getBoolean(SP_ON_CREATE_ENABLED, false);
+        //menu
+        menu_sets = new TreeMap<>();
         //recycler view
-        adapter = new Adapter(this, 0, onStartInBackground);
+        long idt = 0;
+        if (savedInstanceState != null)
+            idt = savedInstanceState.getLong(BUNDLE_VIEW_PATH, 0);
+        adapter = new Adapter(this, idt, onCreateEnabled);
         adapter.ask_before_delete = ask_before_delete;
         RecyclerView rv = findViewById(R.id.list_view);
         rv.setLayoutManager(new LinearLayoutManager(this));
@@ -79,7 +105,60 @@ public class MainActivity extends AppCompatActivity {
                     long id = result.getData().getLongExtra("id", -1);
                     adapter.cursor.onChangeItem(id);
                 });
+    }
 
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        outState.putLong(BUNDLE_VIEW_PATH, adapter.cursor.getPathID());
+        super.onSaveInstanceState(outState);
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    private Menu getMenu() {
+        if (!menu_created) {
+            if(Thread.currentThread() == getMainLooper().getThread()){
+                throw new RuntimeException(getString(R.string.error_wait_in_main_thread, "menu"));
+            }else {
+                menu_lock.lock();
+            }
+        }
+        return menu;
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public void registerButton(String name, String path) {
+        if(name == null || path == null)
+            throw new NullPointerException("name|path is none");
+        Menu menu = getMenu();
+        runOnUiThread(() -> {
+            if (!menu_sets.containsKey(name))
+                menu.add(Menu.NONE, menu.getItem(menu.size() - 1).getItemId() + 1, Menu.NONE, name);
+            menu_sets.put(name, path);
+        });
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public boolean unregisterButton(String name) {
+        if(name == null)
+            throw new NullPointerException("name is none");
+        if (!menu_sets.containsKey(name))
+            return false;
+        menu_sets.remove(name);
+        for(int i = 0; i < menu.size(); ++i){
+            if(menu.getItem(i).getTitle().equals(name)){
+                int id = menu.getItem(i).getItemId();
+                runOnUiThread(()->menu.removeItem(id));
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public void onCreateEnabled(boolean createEnabled) {
+        SharedPreferences.Editor editor = getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).edit();
+        editor.putBoolean(SP_ON_CREATE_ENABLED, createEnabled);
+        editor.apply();
     }
 
     @Override
@@ -87,30 +166,32 @@ public class MainActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.menu_main, menu);
         this.menu = menu;
         menu.getItem(0).setChecked(adapter.ask_before_delete);
+        menu_created = true;
+        menu_lock.free();
         return true;
-    }
-    @SuppressWarnings("UnusedDeclaration")
-    public void onStartInBackground(boolean straight){
-        SharedPreferences.Editor editor = getSharedPreferences("saved_state", Context.MODE_PRIVATE).edit();
-        editor.putBoolean("on_start_in_background", straight);
-        editor.apply();
     }
 
     @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item == menu.getItem(0)) {
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.menu_ask_before_delete) {
             item.setChecked(!item.isChecked());
             adapter.ask_before_delete = item.isChecked();
-            SharedPreferences.Editor editor = getSharedPreferences("saved_state", Context.MODE_PRIVATE).edit();
-            editor.putBoolean("ask_before_delete", adapter.ask_before_delete);
+            SharedPreferences.Editor editor = getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).edit();
+            editor.putBoolean(SP_ASK_BEFORE_DELETE, adapter.ask_before_delete);
             editor.apply();
-        } else if (item == menu.getItem(1)) {
+            return false;
+        } else if (item.getItemId() == R.id.menu_btn_help) {
             adapter.goHelp();
+            return false;
         }
+        String path = menu_sets.get(item.getTitle().toString());
+        if (path == null)
+            return false;
+        adapter.runPath(path, true);
         return false;
     }
 
-    public void start_editor(long id, String name) {
+    public void startEditor(long id, @NonNull String name) {
         Intent intent = new Intent(this, EditorActivity.class);
         intent.putExtra("id", id);
         intent.putExtra("name", name);
@@ -122,8 +203,7 @@ public class MainActivity extends AppCompatActivity {
         imm.hideSoftInputFromWindow(root_layout.getRootView().getWindowToken(), 0);
         root_layout.getRootView().clearFocus();
     }
-
-    public void makeToast(String text, boolean len) {
+    public void makeToast(@NonNull String text, boolean len) {
         runOnUiThread(() -> Toast.makeText(this, text, len ? Toast.LENGTH_LONG : Toast.LENGTH_SHORT).show());
     }
 
@@ -131,32 +211,32 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         isStopped = false;
+        adapter.makeStarted();
     }
+
     @SuppressWarnings("UnusedDeclaration")
-    public synchronized String showInputDialog(String input_name) {
-        if (isStopped)
-            throw new RuntimeException(getString(R.string.error_stopped_input));
-        if (barrier == null)
-            barrier = new CyclicBarrier(2);
-        runOnUiThread(() -> {
-            if (input_dialog == null)
-                input_dialog = InputDialog.createInstance(this);
-            input_dialog.start(input_name);
-        });
-        th_barrier_await();
-        return input_dialog.getString();
+    public String showInputDialog(String input_name) {
+        synchronized (input_lock) {
+            if (isStopped)
+                throw new RuntimeException(getString(R.string.error_stopped_input));
+            if (Thread.currentThread() == getMainLooper().getThread())
+                throw new RuntimeException(getString(R.string.error_wait_in_main_thread, "input"));
+            runOnUiThread(() -> {
+                if (input_dialog == null)
+                    input_dialog = InputDialog.createInstance(this);
+                input_dialog.start(input_name);
+            });
+            lock.lock();
+            return input_dialog.getString();
+        }
     }
 
     public void ui_barrier_wait() {
-        if (barrier.getNumberWaiting() == 1)
-            th_barrier_await();
+        lock.free();
     }
 
     public void th_barrier_await() {
-        try {
-            barrier.await();
-        } catch (Exception ignored) {
-        }
+        lock.lock();
     }
 
     @Override

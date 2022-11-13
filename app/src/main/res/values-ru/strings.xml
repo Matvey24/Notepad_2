@@ -25,4 +25,7 @@
     <string name="error_run_nofile">Невозможно запустить \'%s\' - папку</string>
     <string name="folder_help_name">Help-ru</string>
     <string name="error_stopped_input">Невозможно открыть диалог ввода, пока активити не на экране</string>
+    <string name="warn_script_empty">Этот скрипт пустой: %s</string>
+    <string name="action_keep_screen_on">Не выключать экран</string>
+    <string name="error_wait_in_main_thread">Неудается ждать %s в главном потоке</string>
 </resources>

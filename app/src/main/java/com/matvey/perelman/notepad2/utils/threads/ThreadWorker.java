@@ -1,55 +1,52 @@
 package com.matvey.perelman.notepad2.utils.threads;
-import java.util.concurrent.CyclicBarrier;
 
-public class ThreadWorker extends Thread{
+public class ThreadWorker extends Thread {
 
-  private final Tasks header;
-  
-  private final CyclicBarrier locker;
-  
-  private boolean disposed;
-  
-  public ThreadWorker(Tasks header){
-    this.header = header;
-    disposed = false;
-    locker = new CyclicBarrier(2);
-    start();
-  }
-  @Override
-  public void run(){
-    lock();
-    while(!disposed){
-      doQueue();
-      lock();
+    private final Tasks header;
+
+    private final Locker locker;
+
+    private boolean disposed;
+
+    public ThreadWorker(Tasks header) {
+        this.header = header;
+        disposed = false;
+        locker = new Locker();
+        start();
     }
-  }
-  private void doQueue(){
-    Runnable task;
-    while((task = header.getTask()) != null){
-      task.run();
+
+    @Override
+    public void run() {
+        lock();
+        while (!disposed) {
+            doQueue();
+            lock();
+        }
     }
-    header.onFinish(this);
-  }
-  private void lock(){
-    if(!disposed)
-    try{
-      locker.await();
-    }catch(Exception e){
-      e.printStackTrace();
+
+    private void doQueue() {
+        Runnable task;
+        while ((task = header.getTask()) != null) {
+            task.run();
+        }
+        header.onFinish(this);
     }
-  }
-  public void begin(){
-     try{
-      locker.await();
-    }catch(Exception e){
-      e.printStackTrace();
+
+    private void lock() {
+        if (!disposed)
+            locker.lock();
     }
-  }
-  public void dispose(){
-    end();
-    begin();
-  }
-  public void end(){
-    disposed = true;
-  }
+
+    public void begin() {
+        locker.free();
+    }
+
+    public void dispose() {
+        end();
+        begin();
+    }
+
+    public void end() {
+        disposed = true;
+    }
 }

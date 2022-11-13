@@ -2,10 +2,12 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.matvey.perelman.notepad2.MainActivity">
-    <group android:checkableBehavior="all">
-        <item
-            android:checked="true"
-            android:title="@string/param_ask_delete" />
-    </group>
-    <item android:title="@string/btn_menu_help" />
+    <item
+        android:id="@+id/menu_ask_before_delete"
+        android:checkable="true"
+        android:checked="true"
+        android:title="@string/param_ask_delete" />
+    <item
+        android:id="@+id/menu_btn_help"
+        android:title="@string/btn_menu_help" />
 </menu>

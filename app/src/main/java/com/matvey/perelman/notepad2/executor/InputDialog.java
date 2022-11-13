@@ -1,20 +1,25 @@
 package com.matvey.perelman.notepad2.executor;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 
+import com.google.android.material.internal.TextWatcherAdapter;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.matvey.perelman.notepad2.MainActivity;
 import com.matvey.perelman.notepad2.R;
 
 import java.util.Objects;
+
+import static android.content.Context.INPUT_METHOD_SERVICE;
 
 public class InputDialog extends DialogFragment {
     private TextInputLayout layout;
@@ -34,7 +39,6 @@ public class InputDialog extends DialogFragment {
         View view = inflater.inflate(R.layout.dialog_input, container, false);
         layout = view.findViewById(R.id.input_layout);
         input_text = layout.findViewById(R.id.input_text);
-
         input_text.setOnEditorActionListener((v, actionId, event) -> {
             super.dismiss();
             return true;
@@ -51,6 +55,11 @@ public class InputDialog extends DialogFragment {
     @Override
     public void onStart() {
         super.onStart();
+        input_text.requestFocus();
+        input_text.postDelayed(()->{
+            InputMethodManager imm = (InputMethodManager) activity.getSystemService(INPUT_METHOD_SERVICE);
+            imm.showSoftInput(input_text, InputMethodManager.SHOW_IMPLICIT);
+        }, 300);
         if(!just_started)
             return;
         just_started = false;
