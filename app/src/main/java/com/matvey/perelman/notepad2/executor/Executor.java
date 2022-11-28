@@ -95,9 +95,8 @@ public class Executor implements AutoCloseable {
         return getName(filepath);
     }
 
-    public static ArrayList<String> parsePath(String path) {
-        if(path == null)
-            throw new NullPointerException("path is none");
+    public ArrayList<String> parsePath(String path) {
+        requireNonNull(path);
         if (path.trim().equals("/")) {
             ArrayList<String> list = new ArrayList<>();
             list.add(path);
@@ -222,14 +221,14 @@ public class Executor implements AutoCloseable {
 
     @SuppressWarnings("UnusedDeclaration")
     public void touch(@NonNull String tpath) {
-        String entry = cdGoEntry(tpath, Executor.parsePath(tpath), true);
+        String entry = cdGoEntry(tpath, parsePath(tpath), true);
         long id = conn.getID(curr_path, entry);
         if (id == -1)
             defnewFile(entry, false);
     }
 
     public void mkdir(@NonNull String dpath) {
-        String dir = cdGoEntry(dpath, Executor.parsePath(dpath), true);
+        String dir = cdGoEntry(dpath, parsePath(dpath), true);
         long id = conn.getID(curr_path, dir);
         if (id == -1)
             defnewDir(dir);
@@ -239,7 +238,7 @@ public class Executor implements AutoCloseable {
 
     @SuppressWarnings("UnusedDeclaration")
     public boolean delete(@NonNull String path) {
-        String entry = cdGoEntry(path, Executor.parsePath(path), false);
+        String entry = cdGoEntry(path, parsePath(path), false);
         long id = conn.getID(curr_path, entry);
         if (id < 1) {
             return false;
@@ -251,7 +250,7 @@ public class Executor implements AutoCloseable {
 
     @SuppressWarnings("UnusedDeclaration")
     public void write(@NonNull String fpath, @NonNull String content) {
-        String file = cdGoEntry(fpath, Executor.parsePath(fpath), true);
+        String file = cdGoEntry(fpath, parsePath(fpath), true);
         long id = conn.getID(curr_path, file);
         if (id == -1) {
             id = defnewFile(file, false);
@@ -266,7 +265,7 @@ public class Executor implements AutoCloseable {
 
     @SuppressWarnings("UnusedDeclaration")
     public String read(@NonNull String fpath) {
-        String file = cdGoEntry(fpath, Executor.parsePath(fpath), false);
+        String file = cdGoEntry(fpath, parsePath(fpath), false);
         long id = conn.getID(curr_path, file);
         if (id == -1 || conn.getType(id) == ElementType.FOLDER)
             throw new RuntimeException(activity.getString(R.string.error_read_existence, file));
@@ -275,7 +274,7 @@ public class Executor implements AutoCloseable {
 
     @SuppressWarnings("UnusedDeclaration")
     public void script(@NonNull String fpath, boolean mode) {
-        String file = cdGoEntry(fpath, Executor.parsePath(fpath), true);
+        String file = cdGoEntry(fpath, parsePath(fpath), true);
         long id = conn.getID(curr_path, file);
         if (id == -1) {
             defnewFile(file, mode);
@@ -295,20 +294,20 @@ public class Executor implements AutoCloseable {
 
     @SuppressWarnings("UnusedDeclaration")
     public Cursor listFiles(@NonNull String dpath) {
-        cdGo(dpath, Executor.parsePath(dpath), false);
+        cdGo(dpath, parsePath(dpath), false);
         return conn.getListFiles(curr_path);
     }
 
     @SuppressWarnings("UnusedDeclaration")
     public boolean exists(@NonNull String path) {
-        String entry = cdGoEntry(path, Executor.parsePath(path), false);
+        String entry = cdGoEntry(path, parsePath(path), false);
         return conn.getID(curr_path, entry) != -1;
     }
 
     @SuppressWarnings("UnusedDeclaration")
     public ElementType getType(@NonNull String path) {
         try {
-            String entry = cdGoEntry(path, Executor.parsePath(path), false);
+            String entry = cdGoEntry(path, parsePath(path), false);
             return conn.getType(conn.getID(curr_path, entry));
         } catch (RuntimeException e) {
             return null;
@@ -316,8 +315,10 @@ public class Executor implements AutoCloseable {
     }
 
     public static String path_concat(String path1, String path2) {
-        if(path1 == null || path2 == null)
-            throw new NullPointerException("path1|path2 is none");
+        if(path1 == null)
+            return path2;
+        if(path2 == null)
+            return path1;
         path1 = path1.trim();
         path2 = path2.trim();
         if (path1.endsWith("/")) {
@@ -337,9 +338,8 @@ public class Executor implements AutoCloseable {
 
     @SuppressWarnings("UnusedDeclaration")
     public void rename(@NonNull String epath, String name2) {
-        if(name2 == null)
-            throw new NullPointerException("name is none");
-        String name1 = cdGoEntry(epath, Executor.parsePath(epath), false);
+        requireNonNull(name2);
+        String name1 = cdGoEntry(epath, parsePath(epath), false);
 
         long id = conn.getID(curr_path, name1);
         if (id < 1)
@@ -439,7 +439,10 @@ public class Executor implements AutoCloseable {
     public String getString(@StringRes int id, Object... text) {
         return activity.getString(id, text);
     }
-
+    private void requireNonNull(String obj){
+        if(obj == null)
+            throw new NullPointerException(activity.getString(R.string.error_path_none));
+    }
     @Override
     public void close() {
         conn.close();

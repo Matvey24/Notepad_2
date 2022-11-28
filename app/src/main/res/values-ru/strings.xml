@@ -28,4 +28,5 @@
     <string name="warn_script_empty">Этот скрипт пустой: %s</string>
     <string name="action_keep_screen_on">Не выключать экран</string>
     <string name="error_wait_in_main_thread">Неудается ждать %s в главном потоке</string>
+    <string name="error_path_none">путь - None</string>
 </resources>

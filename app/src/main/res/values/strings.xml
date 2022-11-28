@@ -41,5 +41,6 @@
     <string name="warn_script_empty">The script is empty: %s</string>
     <string name="action_keep_screen_on">Keep screen on</string>
     <string name="error_wait_in_main_thread">Could not wait for %s in main thread</string>
+    <string name="error_path_none">path is None</string>
 
 </resources>
